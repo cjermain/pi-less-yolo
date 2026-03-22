@@ -1,0 +1,88 @@
+min_version = "2024.12.0"
+
+[tasks.install]
+description = "Install pi global tasks into mise"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONF_D="${XDG_CONFIG_HOME:-${HOME}/.config}/mise/conf.d"
+CONF_FILE="${CONF_D}/pi-less-yolo.toml"
+TASKS_PATH="${MISE_PROJECT_ROOT}/tasks"
+
+# Verify docker is available (daemon check is left to pi:health)
+if ! command -v docker > /dev/null 2>&1; then
+  echo "error: docker not found — install Docker before installing pi-less-yolo" >&2
+  exit 1
+fi
+
+mkdir -p "${CONF_D}"
+
+cat > "${CONF_FILE}" << TOML
+# Managed by pi-less-yolo — do not edit by hand.
+# Source repo: ${MISE_PROJECT_ROOT}
+# Re-run \\`mise run install\\` from that directory to update this path.
+
+[task_config]
+includes = ["${TASKS_PATH}"]
+TOML
+
+echo ""
+echo "Installed pi-less-yolo global tasks."
+echo ""
+echo "  Config : ${CONF_FILE}"
+echo "  Tasks  : ${TASKS_PATH}"
+echo ""
+echo "Tasks now available from any directory:"
+echo "  mise run pi            # run pi in Docker"
+echo "  mise run pi:build      # build the Docker image"
+echo "  mise run pi:shell      # open a shell in the container"
+echo "  mise run pi:upgrade    # upgrade pi to the latest release"
+echo "  mise run pi:health     # check the setup"
+echo ""
+echo "Tip: alias pi='mise run pi' in your shell profile for direct access."
+echo "     (see README for collision warning if you have other 'pi' tasks)"
+echo ""
+echo "Next step: mise run pi:build"
+"""
+
+[tasks.uninstall]
+description = "Remove pi global tasks from mise"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONF_FILE="${XDG_CONFIG_HOME:-${HOME}/.config}/mise/conf.d/pi-less-yolo.toml"
+
+if [[ ! -f "${CONF_FILE}" ]]; then
+  echo "Nothing to uninstall (${CONF_FILE} not found)."
+  exit 0
+fi
+
+rm "${CONF_FILE}"
+
+echo ""
+echo "Removed ${CONF_FILE}."
+echo ""
+echo "The Docker image (pi-less-yolo:latest) and pi config (~/.pi/agent) were not touched."
+echo "To remove the image:  docker rmi pi-less-yolo:latest"
+echo "To remove pi config:  rm -rf ~/.pi/agent"
+echo ""
+"""
+
+[tasks.update]
+description = "Pull the latest changes from git (tasks go live immediately, no reinstall needed)"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "${MISE_PROJECT_ROOT}"
+git pull
+
+echo ""
+echo "Updated. Tasks are live immediately — no reinstall needed."
+echo ""
+echo "If the Dockerfile changed, rebuild the image:"
+echo "  mise run pi:build"
+echo ""
+"""

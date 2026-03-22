@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+#MISE description="Build (or rebuild) the pi Docker image"
+set -euo pipefail
+
+REPO_ROOT="${MISE_TASK_DIR}/../.."
+
+# --network=host is only needed on Linux to work around systemd-resolved
+# binding to 127.0.0.53, which is unreachable from Docker's default bridge
+# network. Docker Desktop on macOS handles DNS natively without it.
+#
+# To fix this properly on Linux instead of using --network=host:
+#   1. Find your upstream nameserver:  resolvectl status | grep "DNS Server"
+#   2. Add to /etc/docker/daemon.json: { "dns": ["<upstream-ip>"] }
+#   3. Restart dockerd and remove the --network=host branch below.
+BUILD_FLAGS=()
+[[ "$(uname -s)" == "Linux" ]] && BUILD_FLAGS+=("--network=host")
+
+docker build "${BUILD_FLAGS[@]}" \
+  -f "${REPO_ROOT}/Dockerfile" \
+  -t "pi-less-yolo:latest" \
+  "${REPO_ROOT}"
+
+echo "Image 'pi-less-yolo:latest' built successfully."

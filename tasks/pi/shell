@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#MISE description="Open a bash shell in the pi container with the same mounts as the pi task"
+#MISE raw=true
+#MISE dir="{{cwd}}"
+set -euo pipefail
+
+PI_IMAGE="pi-less-yolo:latest"
+
+docker image inspect "${PI_IMAGE}" > /dev/null 2>&1 || mise run pi:build
+
+# Permissions:
+#   --user $(id -u):$(id -g)   files created in /workspace are owned by the
+#                               calling user on the host, not root.
+#   --cap-drop=ALL             drop all Linux capabilities; pi needs none.
+#   --no-new-privileges        prevent setuid binaries from gaining privileges.
+#
+# Mounts:
+#   $(pwd):/workspace          current directory as the working directory.
+#   ~/.pi/agent:/pi-agent      pi config, credentials, sessions, and managed
+#                               binaries from the host. PI_CODING_AGENT_DIR
+#                               tells pi to use this path instead of deriving
+#                               it from $HOME, sidestepping any HOME-resolution
+#                               issues inside the container.
+DOCKER_FLAGS=(
+  "--rm"
+  "--interactive"
+  "--user" "$(id -u):$(id -g)"
+  "--cap-drop=ALL"
+  "--security-opt=no-new-privileges"
+  "--volume" "$(pwd):/workspace"
+  "--volume" "${HOME}/.pi/agent:/pi-agent"
+  "--workdir" "/workspace"
+  "--env" "PI_CODING_AGENT_DIR=/pi-agent"
+  "--env" "TERM=${TERM:-xterm-256color}"
+  "--env" "COLORTERM=${COLORTERM:-truecolor}"
+)
+[ -t 0 ] && [ -t 1 ] && DOCKER_FLAGS+=("--tty")
+
+docker run --entrypoint bash "${DOCKER_FLAGS[@]}" "${PI_IMAGE}"

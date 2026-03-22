@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+#MISE description="Check the pi container setup for problems"
+set -euo pipefail
+
+PASS="[PASS]"
+WARN="[WARN]"
+FAIL="[FAIL]"
+INFO="[INFO]"
+STATUS=0
+
+pass() { echo "  ${PASS} $*"; }
+warn() { echo "  ${WARN} $*"; }
+fail() { echo "  ${FAIL} $*"; STATUS=1; }
+info() { echo "  ${INFO} $*"; }
+
+# ---------------------------------------------------------------------------
+# Semver comparison: returns 0 if $1 >= $2
+# ---------------------------------------------------------------------------
+version_gte() {
+  printf '%s\n%s' "$2" "$1" | sort -C -V
+}
+
+echo "pi-less-yolo health check"
+echo "========================="
+echo ""
+
+# --- mise version -----------------------------------------------------------
+MISE_VER=$(mise --version 2>/dev/null | awk '{print $1}')
+MISE_MIN="2024.12.0"
+if version_gte "${MISE_VER}" "${MISE_MIN}"; then
+  pass "mise ${MISE_VER} (>= ${MISE_MIN})"
+else
+  fail "mise ${MISE_VER} is below minimum ${MISE_MIN} — run: mise self-update"
+fi
+
+# --- docker binary ----------------------------------------------------------
+if command -v docker > /dev/null 2>&1; then
+  pass "docker available"
+else
+  fail "docker not found — install Docker: https://docs.docker.com/get-docker/"
+fi
+
+# --- docker daemon ----------------------------------------------------------
+if docker info > /dev/null 2>&1; then
+  pass "docker daemon running"
+else
+  fail "docker daemon not running — start Docker Desktop or dockerd"
+fi
+
+# --- image ------------------------------------------------------------------
+if docker image inspect "pi-less-yolo:latest" > /dev/null 2>&1; then
+  pass "image pi-less-yolo:latest exists"
+else
+  warn "image pi-less-yolo:latest not found — run: mise run pi:build"
+fi
+
+# --- conf.d entry -----------------------------------------------------------
+CONF_D="${XDG_CONFIG_HOME:-${HOME}/.config}/mise/conf.d"
+CONF_FILE="${CONF_D}/pi-less-yolo.toml"
+if [[ -f "${CONF_FILE}" ]]; then
+  pass "global config ${CONF_FILE}"
+else
+  fail "global config not found — run: mise run install (from the pi-less-yolo repo)"
+fi
+
+# --- task files -------------------------------------------------------------
+echo ""
+echo "  Task files:"
+TASKS_DIR="${MISE_TASK_DIR}"
+for NAME in _default build shell upgrade health; do
+  if [[ -x "${TASKS_DIR}/${NAME}" ]]; then
+    pass "  tasks/pi/${NAME}"
+  else
+    fail "  tasks/pi/${NAME} missing or not executable"
+  fi
+done
+
+# --- ~/.pi/agent ------------------------------------------------------------
+if [[ -d "${HOME}/.pi/agent" ]]; then
+  pass "~/.pi/agent exists"
+else
+  warn "~/.pi/agent does not exist — it will be created on first run"
+fi
+
+# --- tmux passthrough -------------------------------------------------------
+if command -v tmux > /dev/null 2>&1; then
+  TMUX_VER=$(tmux -V 2>/dev/null | awk '{print $2}')
+  TMUX_MIN="3.3"
+  if version_gte "${TMUX_VER}" "${TMUX_MIN}"; then
+    pass "tmux ${TMUX_VER} (>= ${TMUX_MIN}, passthrough supported)"
+  else
+    warn "tmux ${TMUX_VER} < ${TMUX_MIN} — terminal passthrough disabled; upgrade tmux for best experience"
+  fi
+else
+  info "tmux not found — passthrough not available (not required)"
+fi
+
+# --- platform note ----------------------------------------------------------
+echo ""
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  info "macOS: --network=host is skipped at build time (Docker Desktop handles DNS natively)"
+fi
+
+echo ""
+if [[ "${STATUS}" -eq 0 ]]; then
+  echo "All checks passed."
+else
+  echo "One or more checks failed. See [FAIL] items above."
+fi
+echo ""
+
+exit "${STATUS}"
