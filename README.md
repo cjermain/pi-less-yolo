@@ -2,6 +2,8 @@
 
 > Run [pi-coding-agent](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) (a multi-provider AI coding agent supporting Claude, GPT, Gemini, and [many more](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent#providers--models)) inside an isolated Docker container — limiting the blast radius of agent-driven changes to your mounted working directory.
 
+![pi-less-yolo demo: filesystem isolation proof and AI-assisted bug fix](docs/demo.gif)
+
 A [mise](https://mise.jdx.dev) shim that wraps the **pi** AI coding agent in a [Chainguard](https://chainguard.dev)-based container with your current directory and `~/.pi/agent` volume-mounted — and nothing else.
 
 Pi defaults to running with full access to your filesystem. This repo constrains it so the agent cannot touch files outside your project, cannot escalate privileges, and runs as your own user.
