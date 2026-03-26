@@ -1,0 +1,13 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:base"],
+  "docker": { "enabled": false },
+  "regexManagers": [
+    {
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": ["ARG PI_VERSION=(?<currentValue>[\\d.]+)"],
+      "depNameTemplate": "@mariozechner/pi-coding-agent",
+      "datasourceTemplate": "npm"
+    }
+  ]
+}
