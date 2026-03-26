@@ -4,7 +4,7 @@
 #MISE dir="{{cwd}}"
 set -euo pipefail
 
-# shellcheck source=_common
+# shellcheck source=tasks/pi/_common
 source "$(dirname "$0")/_common"
 
 docker run --entrypoint bash "${DOCKER_FLAGS[@]}" "${PI_IMAGE}"
