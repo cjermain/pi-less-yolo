@@ -39,6 +39,34 @@ DOCKER_FLAGS=(
   "--env" "TERM=${TERM:-xterm-256color}"
   "--env" "COLORTERM=${COLORTERM:-truecolor}"
 )
+
+# Forward pi-related env vars and API keys if set on the host.
+# Auth file (~/.pi/agent/auth.json) takes priority over these if present.
+PI_ENV_VARS=(
+  PI_SKIP_VERSION_CHECK
+  PI_CACHE_RETENTION
+  PI_PACKAGE_DIR
+  VISUAL
+  EDITOR
+  ANTHROPIC_API_KEY
+  AZURE_OPENAI_API_KEY
+  OPENAI_API_KEY
+  GEMINI_API_KEY
+  MISTRAL_API_KEY
+  GROQ_API_KEY
+  CEREBRAS_API_KEY
+  XAI_API_KEY
+  OPENROUTER_API_KEY
+  AI_GATEWAY_API_KEY
+  ZAI_API_KEY
+  OPENCODE_API_KEY
+  KIMI_API_KEY
+  MINIMAX_API_KEY
+  MINIMAX_CN_API_KEY
+)
+for var in "${PI_ENV_VARS[@]}"; do
+  [ -n "${!var:-}" ] && DOCKER_FLAGS+=("--env" "$var=${!var}")
+done
 [ -t 0 ] && [ -t 1 ] && DOCKER_FLAGS+=("--tty")
 
 docker run "${DOCKER_FLAGS[@]}" "${PI_IMAGE}" "$@"
