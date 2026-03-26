@@ -1,6 +1,6 @@
 ARG PI_VERSION=0.62.0
 
-FROM cgr.dev/chainguard/node:latest-dev@sha256:8e17971db461cd77228a693db4e25f15105f73c664fc8886c360cbc76428eff0
+FROM cgr.dev/chainguard/node:latest-dev@sha256:4ab907c3dccb83ebfbf2270543da99e0241ad2439d03d9ac0f69fe18497eb64a
 
 # Install git, tmux, curl, and ca-certificates via Wolfi's apk.
 # Node.js (LTS) and npm are pre-installed in the base image.
