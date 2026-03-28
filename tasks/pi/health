@@ -97,6 +97,28 @@ else
   info "tmux not found — passthrough not available (not required)"
 fi
 
+# --- git identity -----------------------------------------------------------
+if [[ -n "${PI_NO_GITCONFIG:-}" ]]; then
+  info "git identity disabled (PI_NO_GITCONFIG is set)"
+elif [[ -f "${HOME}/.gitconfig" ]]; then
+  # shellcheck disable=SC2088
+  pass "~/.gitconfig found (will be mounted read-only)"
+else
+  # shellcheck disable=SC2088
+  info "~/.gitconfig not found — git commits inside the container will have no author identity"
+fi
+
+# --- SSH agent forwarding ---------------------------------------------------
+if [[ -n "${PI_SSH_AGENT:-}" ]]; then
+  if [[ -S "${SSH_AUTH_SOCK:-}" ]]; then
+    pass "SSH agent forwarding enabled (SSH_AUTH_SOCK=${SSH_AUTH_SOCK:-})"
+  else
+    warn "PI_SSH_AGENT=1 but SSH_AUTH_SOCK is not set or is not a socket — start ssh-agent or ensure your keychain agent is running"
+  fi
+else
+  info "SSH agent forwarding disabled (set PI_SSH_AGENT=1 to enable for SSH-based git remotes)"
+fi
+
 # --- platform note ----------------------------------------------------------
 echo ""
 if [[ "$(uname -s)" == "Darwin" ]]; then

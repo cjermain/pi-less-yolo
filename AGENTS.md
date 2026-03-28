@@ -71,6 +71,7 @@ mise run ci      # lint + docker build + smoke test
 - Docker security flags (`--cap-drop=ALL`, `--security-opt=no-new-privileges`, `--user $(id -u):$(id -g)`) are non-negotiable. Do not weaken them.
 - `--network=host` appears only in `pi:build` on Linux (DNS workaround). It must not appear in runtime `DOCKER_FLAGS`.
 - When adding a new provider API key: add it to the `PI_ENV_VARS` array in `tasks/pi/_common` **and** the auth table in `README.md`.
+- `PI_NO_GITCONFIG=1` suppresses the automatic `~/.gitconfig` read-only mount. `PI_SSH_AGENT=1` enables SSH agent socket forwarding. Both are host-side control variables consumed by `_common` before `docker run`; they do not go in `PI_ENV_VARS` and are not forwarded into the container.
 - Use `perl -pi -e` for in-place file edits (cross-platform; avoids `sed -i` / `sed -i ''` incompatibility between Linux and macOS).
 
 ## Automated dependency updates

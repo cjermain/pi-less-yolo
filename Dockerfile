@@ -2,13 +2,16 @@ ARG PI_VERSION=0.63.1
 
 FROM cgr.dev/chainguard/node:latest-dev@sha256:4ab907c3dccb83ebfbf2270543da99e0241ad2439d03d9ac0f69fe18497eb64a
 
-# Install git, tmux, curl, and ca-certificates via Wolfi's apk.
+# Install git, tmux, curl, ca-certificates, and openssh-client via Wolfi's apk.
+# openssh-client provides the ssh binary (required for git over SSH when using
+# agent forwarding via PI_SSH_AGENT=1) and ssh-add (for inspecting the agent).
 # Node.js (LTS) and npm are pre-installed in the base image.
 USER root
 RUN apk add --no-cache \
         curl \
         ca-certificates \
         git \
+        openssh-client \
         tmux
 
 # Install mise and uv

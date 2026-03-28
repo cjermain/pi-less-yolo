@@ -61,3 +61,37 @@ for var in "${PI_ENV_VARS[@]}"; do
 done
 
 [ -t 0 ] && [ -t 1 ] && DOCKER_FLAGS+=("--tty")
+
+# Git identity: mount ~/.gitconfig read-only so the agent can commit with the
+# correct author identity. Opt out by setting PI_NO_GITCONFIG=1.
+#
+# Note: credential helpers (e.g. osxkeychain, libsecret) referenced in
+# ~/.gitconfig will not be available inside the container and will fail
+# gracefully — git falls back to prompting for credentials.
+if [[ -z "${PI_NO_GITCONFIG:-}" && -f "${HOME}/.gitconfig" ]]; then
+  DOCKER_FLAGS+=("--volume" "${HOME}/.gitconfig:/home/piuser/.gitconfig:ro")
+fi
+
+# SSH agent forwarding: forward the host SSH agent socket into the container
+# so the agent can use SSH-based git remotes without private keys ever
+# entering the container. Opt in by setting PI_SSH_AGENT=1.
+#
+# Security note: a compromised container can authenticate as you to any SSH
+# server your agent has loaded. Review loaded keys with `ssh-add -l` before
+# enabling. This does not weaken the existing --cap-drop / --user constraints.
+#
+# On macOS, Docker Desktop exposes the host SSH agent via a fixed path inside
+# the VM. On Linux the live socket is bind-mounted directly.
+if [[ -n "${PI_SSH_AGENT:-}" ]]; then
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    DOCKER_FLAGS+=(
+      "--mount" "type=bind,src=/run/host-services/ssh-auth.sock,target=/run/host-services/ssh-auth.sock"
+      "--env" "SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock"
+    )
+  elif [[ -S "${SSH_AUTH_SOCK:-}" ]]; then
+    DOCKER_FLAGS+=(
+      "--volume" "${SSH_AUTH_SOCK:-}:${SSH_AUTH_SOCK:-}"
+      "--env" "SSH_AUTH_SOCK=${SSH_AUTH_SOCK:-}"
+    )
+  fi
+fi

@@ -175,6 +175,24 @@ Mounting the directory at its real path (rather than a fixed `/workspace`) means
 
 The agent cannot reach other directories on your host. It can make arbitrary network requests and execute any command available inside the container image.
 
+### Git identity
+
+If `~/.gitconfig` exists on the host it is mounted read-only at startup, so the agent can make `git commit` with your correct author identity. Opt out by setting `PI_NO_GITCONFIG=1`.
+
+> **Note:** credential helpers referenced in `~/.gitconfig` (e.g. `osxkeychain`, `libsecret`) are not available inside the container. They fail gracefully — git falls back to prompting for credentials.
+
+### SSH agent forwarding
+
+SSH is **disabled by default**. Set `PI_SSH_AGENT=1` to forward the host SSH agent socket into the container, enabling SSH-based git remotes (`git clone git@github.com:...`) without private keys ever entering the container.
+
+```bash
+PI_SSH_AGENT=1 mise run pi
+```
+
+Or export it in your shell profile to make it permanent.
+
+> **Security note:** a compromised container can authenticate as you to any SSH server your agent has loaded. Review loaded keys with `ssh-add -l` before enabling. On macOS, Docker Desktop exposes the host SSH agent via a fixed path inside the VM — no additional setup is needed beyond setting the variable.
+
 ### Linux: `--network=host` at build time
 
 On Linux, Docker's default bridge network cannot reach `127.0.0.53` (systemd-resolved). `pi:build` uses `--network=host` during the build only to work around this. This does not affect runtime.
