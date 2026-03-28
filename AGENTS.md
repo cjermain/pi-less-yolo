@@ -33,6 +33,29 @@ Dockerfile, and a CI smoke test.
 
 ## Development workflow
 
+The Docker socket is intentionally absent from the container — mounting it
+would grant full host filesystem access via a trivial container escape, defeating
+the entire security model.
+
+From within a `mise run pi` session, run `mise run lint` to validate scripts
+and the Dockerfile. For anything that requires Docker (`mise run ci`,
+`mise run pi:build`, smoke tests), exit the container and run on the host.
+Commit the changes and let CI handle build validation if a host shell isn't
+available.
+
+On a fresh clone, two setup steps are required before any tasks will work:
+
+```bash
+mise trust          # trust .mise.toml so mise will install tools from it
+mise run install    # register tasks/pi/ globally via ~/.config/mise/conf.d/pi-less-yolo.toml
+```
+
+`mise run ci` calls `mise run pi:build`, which is defined in `tasks/pi/` and only
+resolvable after `install` has been run. Without it, mise will error with
+`no task pi:build found`.
+
+Day-to-day commands:
+
 ```bash
 mise run lint    # shellcheck + hadolint
 mise run ci      # lint + docker build + smoke test
