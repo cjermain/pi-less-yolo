@@ -93,5 +93,7 @@ if [[ -n "${PI_SSH_AGENT:-}" ]]; then
       "--volume" "${SSH_AUTH_SOCK:-}:${SSH_AUTH_SOCK:-}"
       "--env" "SSH_AUTH_SOCK=${SSH_AUTH_SOCK:-}"
     )
+  else
+    echo "warning: PI_SSH_AGENT=1 but SSH_AUTH_SOCK is not set or is not a socket — SSH agent forwarding disabled" >&2
   fi
 fi
