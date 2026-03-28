@@ -41,3 +41,6 @@ jobs:
 
       - name: Smoke test
         run: docker run --rm pi-less-yolo:latest --version
+
+      - name: Test python3 availability
+        run: docker run --rm --entrypoint python3 pi-less-yolo:latest --version

@@ -5,6 +5,34 @@
   "github-actions": { "enabled": false },
   "regexManagers": [
     {
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": [
+        "MISE_VERSION=(?<currentValue>[\\d.]+)"
+      ],
+      "depNameTemplate": "mise",
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": "jdx/mise"
+    },
+    {
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": [
+        "UV_VERSION=(?<currentValue>[\\d.]+)"
+      ],
+      "depNameTemplate": "uv",
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": "astral-sh/uv"
+    },
+    {
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": [
+        "uv python install (?<currentValue>[\\d.]+)"
+      ],
+      "depNameTemplate": "python",
+      "datasourceTemplate": "github-tags",
+      "packageNameTemplate": "python/cpython",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
       "fileMatch": ["^Dockerfile$", "^README\\.md$"],
       "matchStrings": [
         "ARG PI_VERSION=(?<currentValue>[\\d.]+)",

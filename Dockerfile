@@ -11,14 +11,20 @@ RUN apk add --no-cache \
         git \
         tmux
 
-# Install pi globally
-RUN npm install -g "@mariozechner/pi-coding-agent@${PI_VERSION}"
-
 # Install mise and uv
 RUN curl -fsSL https://mise.run \
         | MISE_VERSION=2026.3.9 MISE_INSTALL_PATH=/usr/local/bin/mise sh \
     && curl -fsSL https://astral.sh/uv/install.sh \
         | UV_VERSION=0.10.12 UV_INSTALL_DIR=/usr/local/bin sh
+
+ENV UV_PYTHON_INSTALL_DIR=/usr/local/share/uv/python
+
+# Install Python via uv and expose it on PATH
+RUN uv python install 3.14.3 \
+    && ln -s "$(uv python find 3.14.3)" /usr/local/bin/python3
+
+# Install pi globally
+RUN npm install -g "@mariozechner/pi-coding-agent@${PI_VERSION}"
 
 # Create a world-writable home directory so any runtime UID (supplied via
 # `docker run --user $(id -u):$(id -g)`) can write here even without a
