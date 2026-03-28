@@ -15,7 +15,7 @@ RUN apk add --no-cache \
 RUN curl -fsSL https://mise.run \
         | MISE_VERSION=2026.3.9 MISE_INSTALL_PATH=/usr/local/bin/mise sh \
     && curl -fsSL https://astral.sh/uv/install.sh \
-        | UV_VERSION=0.10.12 UV_INSTALL_DIR=/usr/local/bin sh
+        | UV_VERSION=0.11.2 UV_INSTALL_DIR=/usr/local/bin sh
 
 ENV UV_PYTHON_INSTALL_DIR=/usr/local/share/uv/python
 
