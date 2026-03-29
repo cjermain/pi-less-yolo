@@ -2,9 +2,9 @@
 #MISE description="Smoke test that pi:readonly mounts the project directory read-only"
 set -euo pipefail
 
-# shellcheck disable=SC2016  # $1 expands inside the container, not here
+# shellcheck disable=SC2016  # $1 is a positional parameter in the child bash -c, not the current shell
 _inner='
-  touch ./__ro_test 2>&1 && { rm -f ./__ro_test; echo WRITABLE; } || echo READONLY
+  touch ./__ro_test && { rm -f ./__ro_test; echo WRITABLE; } || echo READONLY
 '
 result=$(
   _PI_WORKDIR_RO=1 bash -c '
