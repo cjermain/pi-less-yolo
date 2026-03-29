@@ -69,6 +69,12 @@ if [[ -z "${PI_NO_GITCONFIG:-}" && -f "${HOME}/.gitconfig" ]]; then
   DOCKER_FLAGS+=("--volume" "${HOME}/.gitconfig:/home/piuser/.gitconfig:ro")
 fi
 
+# Resource limits. Opt in by setting any of PI_MEMORY, PI_CPUS, or PI_PIDS_LIMIT.
+# Examples: PI_MEMORY=4g PI_CPUS=2 PI_PIDS_LIMIT=512
+[[ -n "${PI_MEMORY:-}" ]]     && DOCKER_FLAGS+=("--memory" "${PI_MEMORY}")
+[[ -n "${PI_CPUS:-}" ]]       && DOCKER_FLAGS+=("--cpus" "${PI_CPUS}")
+[[ -n "${PI_PIDS_LIMIT:-}" ]] && DOCKER_FLAGS+=("--pids-limit" "${PI_PIDS_LIMIT}")
+
 # SSH agent forwarding. Opt in by setting PI_SSH_AGENT=1.
 # Also mounts ~/.ssh/known_hosts and ~/.ssh/config read-only.
 # Security: a compromised container can authenticate as you to any server your
