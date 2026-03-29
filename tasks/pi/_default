@@ -4,8 +4,11 @@
 #MISE dir="{{cwd}}"
 set -euo pipefail
 
-# shellcheck source=tasks/pi/_common
-source "$(dirname "$0")/_common"
+# shellcheck source=tasks/pi/_docker_flags
+source "$(dirname "$0")/_docker_flags"
+
+DOCKER_FLAGS+=("--interactive")
+[ -t 0 ] && [ -t 1 ] && DOCKER_FLAGS+=("--tty")
 
 if [ -n "${TMUX:-}" ]; then
   tmux set-option -p allow-passthrough on 2>/dev/null || true

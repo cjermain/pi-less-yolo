@@ -4,8 +4,11 @@
 #MISE dir="{{cwd}}"
 set -euo pipefail
 
-# shellcheck source=tasks/pi/_common
-source "$(dirname "$0")/_common"
+# shellcheck source=tasks/pi/_docker_flags
+source "$(dirname "$0")/_docker_flags"
+
+DOCKER_FLAGS+=("--interactive")
+[ -t 0 ] && [ -t 1 ] && DOCKER_FLAGS+=("--tty")
 
 # Pass bash as CMD so the entrypoint runs passwd synthesis before dropping to a shell.
 docker run "${DOCKER_FLAGS[@]}" "${PI_IMAGE}" bash

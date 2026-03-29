@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Run all container smoke tests"
+set -euo pipefail
+
+mise run test:pi
+mise run test:python
+mise run test:limits

@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+#MISE description="Smoke test that PI_MEMORY, PI_CPUS, and PI_PIDS_LIMIT are enforced by the kernel"
+set -euo pipefail
+
+# shellcheck disable=SC2016  # $quota expands inside the container, not here
+_inner='
+  [ "$(cat /sys/fs/cgroup/memory.max)" = "536870912" ] || { echo "FAIL memory"; exit 1; }
+  [ "$(cat /sys/fs/cgroup/pids.max)" = "64" ]          || { echo "FAIL pids";   exit 1; }
+  read -r quota _ < /sys/fs/cgroup/cpu.max
+  [ "$quota" = "200000" ] || { echo "FAIL cpu: $quota"; exit 1; }
+  echo "  OK memory=536870912 pids=64 cpu=200000"
+'
+PI_MEMORY=512m PI_CPUS=2 PI_PIDS_LIMIT=64 bash -c '
+  source tasks/pi/_docker_flags
+  docker run "${DOCKER_FLAGS[@]}" pi-less-yolo:latest bash -c "$1"
+' -- "$_inner"

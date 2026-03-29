@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Smoke test that pi starts and reports its version"
+set -euo pipefail
+
+docker run --rm pi-less-yolo:latest --version

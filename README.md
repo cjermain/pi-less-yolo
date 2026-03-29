@@ -204,6 +204,23 @@ Or export it in your shell profile to make it permanent.
 
 > **Security note:** a compromised container can authenticate as you to any SSH server your agent has loaded. Review loaded keys with `ssh-add -l` before enabling. On macOS, Docker Desktop exposes the host SSH agent via a fixed path inside the VM — no additional setup is needed beyond setting the variable. On Linux, ensure `ssh-agent` is running and `SSH_AUTH_SOCK` is exported in your shell environment.
 
+### Resource limits
+
+By default no memory, CPU, or process-count limits are applied. Set any of these
+variables to cap resource usage:
+
+| Variable | Docker flag | Example |
+|---|---|---|
+| `PI_MEMORY` | `--memory` | `PI_MEMORY=4g` |
+| `PI_CPUS` | `--cpus` | `PI_CPUS=2` |
+| `PI_PIDS_LIMIT` | `--pids-limit` | `PI_PIDS_LIMIT=512` |
+
+```bash
+PI_MEMORY=4g PI_PIDS_LIMIT=512 mise run pi
+```
+
+Or export in your shell profile to make them permanent.
+
 ### Linux: `--network=host` at build time
 
 On Linux, Docker's default bridge network cannot reach `127.0.0.53` (systemd-resolved). `pi:build` uses `--network=host` during the build only to work around this. This does not affect runtime.

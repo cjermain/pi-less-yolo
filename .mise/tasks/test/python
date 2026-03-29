@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Smoke test that python3 is available in the container"
+set -euo pipefail
+
+docker run --rm pi-less-yolo:latest bash -c 'python3 --version'
