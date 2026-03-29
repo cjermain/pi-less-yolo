@@ -14,6 +14,7 @@ Dockerfile, and a CI smoke test.
 | `Dockerfile` | Single-stage Chainguard node image; installs curl, git, tmux, mise, uv, Python, and pi. Entrypoint synthesises a `/etc/passwd` entry for the runtime UID so tools like SSH can resolve the user. |
 | `tasks/pi/_docker_flags` | Sourced (not executed) by all pi tasks; defines `DOCKER_FLAGS` (security options, volume mounts, env-var forwarding) |
 | `tasks/pi/_default` | `mise run pi` — launches the agent in the container |
+| `tasks/pi/readonly` | `mise run pi:readonly` — launches the agent with the project directory mounted read-only and file-modification tools disabled |
 | `tasks/pi/build` | `mise run pi:build` — builds the Docker image |
 | `tasks/pi/shell` | `mise run pi:shell` — opens bash in the container with identical mounts |
 | `tasks/pi/upgrade` | `mise run pi:upgrade` — bumps `ARG PI_VERSION` in `Dockerfile` and rebuilds |

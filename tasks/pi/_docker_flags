@@ -24,7 +24,7 @@ DOCKER_FLAGS=(
   "--cap-drop=ALL"
   "--security-opt=no-new-privileges"
   "--ipc=none"
-  "--volume" "$(pwd):$(pwd)"
+  "--volume" "$(pwd):$(pwd)${_PI_WORKDIR_RO:+:ro}"  # :ro set by pi:readonly
   "--volume" "${HOME}/.pi/agent:/pi-agent"
   "--workdir" "$(pwd)"
   "--env" "PI_CODING_AGENT_DIR=/pi-agent"

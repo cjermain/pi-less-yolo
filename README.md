@@ -76,6 +76,7 @@ alias pi='mise run pi'
 | Task | Description |
 |---|---|
 | `mise run pi` | Run the pi AI coding agent in the sandboxed container |
+| `mise run pi:readonly` | Run pi with the project directory mounted read-only and file-modification tools disabled |
 | `mise run pi:build` | Build or rebuild the Docker container image |
 | `mise run pi:shell` | Open a bash shell in the container (same mounts as `pi`) |
 | `mise run pi:upgrade` | Upgrade pi to the latest npm release and rebuild |
@@ -175,6 +176,12 @@ The container is launched with:
 Mounting the directory at its real path (rather than a fixed `/workspace`) means pi's session tracking reflects the actual project path, so each project gets distinct session history.
 
 The agent cannot reach other directories on your host. It can make arbitrary network requests and execute any command available inside the container image.
+
+### Read-only mode
+
+`mise run pi:readonly` mounts the project directory read-only and restricts pi to the `read`, `grep`, `find`, and `ls` tools. The agent can answer questions about the codebase but cannot write files or run shell commands — enforced at the kernel level via the `:ro` volume mount.
+
+Use it for untrusted or sensitive codebases.
 
 ### Pi packages
 
