@@ -27,7 +27,7 @@ Dockerfile, and a CI smoke test.
 | `.mise/tasks/lint/shell` | shellcheck on all executable scripts under `tasks/` and `.mise/tasks/` |
 | `.mise/tasks/lint/docker` | hadolint on `Dockerfile` |
 | `.mise.toml` | Pins tool versions (shellcheck, hadolint) for local development |
-| `.hadolint.yaml` | Suppresses four intentional hadolint rules with justification comments (DL3002, DL3018, DL3059, DL4006) |
+| `.hadolint.yaml` | Suppresses three intentional hadolint rules with justification comments (DL3002, DL3018, DL3059) |
 | `.github/workflows/ci.yml` | CI: lint job + build job (image build, `--version` smoke test, `python3 --version`) |
 | `renovate.json` | Renovate config (see below) |
 | `.github/dependabot.yml` | Dependabot config (see below) |
@@ -84,7 +84,7 @@ mise run ci      # lint + docker build + smoke test
 | Dependency | Location | Datasource |
 |---|---|---|
 | `mise` | `MISE_VERSION=` in `Dockerfile` | GitHub Releases (`jdx/mise`) |
-| `uv` | `UV_VERSION=` in `Dockerfile` | GitHub Releases (`astral-sh/uv`) |
+| `uv` | `mise install uv@` / `mise exec uv@` in `Dockerfile` | GitHub Releases (`astral-sh/uv`) |
 | Python | `uv python install <ver>` in `Dockerfile` | GitHub Tags (`python/cpython`) |
 | `@mariozechner/pi-coding-agent` | `npm install -g` line in `Dockerfile` and badge in `README.md` | npm |
 

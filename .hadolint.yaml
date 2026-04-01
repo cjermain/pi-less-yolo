@@ -11,7 +11,3 @@ ignored:
   # preserve distinct layer boundaries (install tools, install pi, install mise/uv).
   - DL3059
 
-  # The Chainguard Wolfi base uses busybox ash which does not support
-  # set -o pipefail. The curl installers are vendor-supplied scripts and cannot
-  # be restructured to avoid the pipe.
-  - DL4006
