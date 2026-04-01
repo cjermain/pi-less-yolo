@@ -16,7 +16,7 @@
     {
       "fileMatch": ["^Dockerfile$"],
       "matchStrings": [
-        "UV_VERSION=(?<currentValue>[\\d.]+)"
+        "mise (?:install|exec) uv@(?<currentValue>[\\d.]+)"
       ],
       "depNameTemplate": "uv",
       "datasourceTemplate": "github-releases",
