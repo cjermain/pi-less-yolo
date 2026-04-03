@@ -119,6 +119,25 @@ else
   info "SSH agent forwarding disabled (set PI_SSH_AGENT=1 to enable for SSH-based git remotes)"
 fi
 
+# --- local model servers ---------------------------------------------------
+MODELS_JSON="${HOME}/.pi/agent/models.json"
+_has_local_urls=0
+[[ -f "${MODELS_JSON}" ]] && grep -qE "localhost|127\.0\.0\.1" "${MODELS_JSON}" && _has_local_urls=1
+if [[ -n "${PI_LOCAL_MODELS:-}" ]]; then
+  if [[ "${_has_local_urls}" -eq 1 ]]; then
+    pass "local model servers: --network=host active (PI_LOCAL_MODELS=1)"
+  else
+    warn "PI_LOCAL_MODELS=1 is set but no localhost URLs found in models.json"
+  fi
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    info "macOS: --network=host uses the Docker Desktop VM network, not the Mac's — localhost services on the Mac are not reachable this way"
+  fi
+elif [[ "${_has_local_urls}" -eq 1 ]]; then
+  warn "local model URLs found in models.json but PI_LOCAL_MODELS=1 is not set — they will not be reachable inside the container"
+else
+  info "local model host access inactive (set PI_LOCAL_MODELS=1 to enable)"
+fi
+
 # --- platform note ----------------------------------------------------------
 echo ""
 if [[ "$(uname -s)" == "Darwin" ]]; then

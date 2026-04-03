@@ -72,6 +72,14 @@ fi
 [[ -n "${PI_CPUS:-}" ]]       && DOCKER_FLAGS+=("--cpus" "${PI_CPUS}")
 [[ -n "${PI_PIDS_LIMIT:-}" ]] && DOCKER_FLAGS+=("--pids-limit" "${PI_PIDS_LIMIT}")
 
+# PI_LOCAL_MODELS=1: share the host network namespace so local model servers
+# (Ollama, LM Studio, vLLM) are reachable at their native localhost URLs.
+# Security: all host ports become reachable. macOS: uses the Docker Desktop VM
+# network — localhost on the Mac is not reachable; use host.docker.internal.
+if [[ -n "${PI_LOCAL_MODELS:-}" ]]; then
+  DOCKER_FLAGS+=("--network=host")
+fi
+
 # SSH agent forwarding. Opt in by setting PI_SSH_AGENT=1.
 # Also mounts ~/.ssh/known_hosts and ~/.ssh/config read-only.
 # Security: a compromised container can authenticate as you to any server your

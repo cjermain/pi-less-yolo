@@ -207,7 +207,7 @@ Use it for untrusted or sensitive codebases.
 ### Pi packages
 
 Pi packages installed inside the container (`pi install npm:...`, `pi install git:...`)
-are written to `~/.pi/agent/npm/` and `~/.pi/agent/git/` and loaded as extensions on
+are written to `~/.pi/agent/npm-global/lib/node_modules/` and `~/.pi/agent/git/` and loaded as extensions on
 every subsequent run. A prompt-injected install persists to the host and survives the
 session.
 
@@ -231,6 +231,52 @@ PI_SSH_AGENT=1 mise run pi
 Or export it in your shell profile to make it permanent.
 
 > **Security note:** a compromised container can authenticate as you to any SSH server your agent has loaded. Review loaded keys with `ssh-add -l` before enabling. On macOS, Docker Desktop exposes the host SSH agent via a fixed path inside the VM — no additional setup is needed beyond setting the variable. On Linux, ensure `ssh-agent` is running and `SSH_AUTH_SOCK` is exported in your shell environment.
+
+### Local models (Ollama, LM Studio, vLLM)
+
+Local model servers are **disabled by default**. Set `PI_LOCAL_MODELS=1` to share
+the host network namespace, making `localhost` inside the container identical to
+`localhost` on the host. Model URLs that work when running pi natively work
+identically inside the container with no changes to `models.json` or to the model
+server's binding address.
+
+Create `~/.pi/agent/models.json` using the same URL you would use on the host:
+
+```json
+{
+  "providers": {
+    "ollama": {
+      "baseUrl": "http://localhost:11434/v1",
+      "api": "openai-completions",
+      "apiKey": "ollama",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        { "id": "llama3.1:8b" }
+      ]
+    }
+  }
+}
+```
+
+Then start pi with the flag and select the model with `/model`:
+
+```bash
+PI_LOCAL_MODELS=1 mise run pi
+```
+
+Or export it in your shell profile to make it permanent.
+
+> **Security note:** `--network=host` makes all host ports reachable from inside
+> the container, not just the model server port. `--cap-drop=ALL` and
+> `--no-new-privileges` remain in force.
+
+> **macOS:** `--network=host` uses the Docker Desktop Linux VM's network namespace,
+> not the Mac's. Localhost services on macOS are not reachable this way. Use
+> `host.docker.internal` as the `baseUrl` in `models.json` instead — Docker
+> Desktop routes that hostname to the Mac host correctly.
 
 ### Resource limits
 
