@@ -42,7 +42,9 @@ RUN uv python install 3.14.3 \
 # Install pi globally
 RUN npm install -g "@mariozechner/pi-coding-agent@0.64.0"
 
-# Extension binaries land in /pi-agent/npm-global/bin; npmrc is written below.
+# Prepend extension binaries (host-mounted via /pi-agent). Security: binaries
+# here can shadow any command; no privilege escalation (--cap-drop=ALL,
+# --no-new-privileges), but review ~/.pi/agent/npm-global/bin/ after installs.
 ENV PATH="/pi-agent/npm-global/bin:${PATH}"
 
 # /home/piuser: world-writable (1777) so any runtime UID can write here.
@@ -51,11 +53,8 @@ ENV PATH="/pi-agent/npm-global/bin:${PATH}"
 # /etc/passwd: world-writable so the entrypoint can add the runtime UID.
 #   SSH calls getpwuid(3) and hard-fails without a passwd entry. Safe here
 #   because --cap-drop=ALL and --no-new-privileges block privilege escalation.
-# .npmrc sets the global prefix to /pi-agent/npm-global (the ~/.pi/agent volume
-# mount) so the runtime user can install extensions there and they persist across
-# restarts. Written as a file rather than via `npm config set` because
-# ENV HOME=/home/piuser comes after this RUN; `npm config set` here would write
-# to root's home instead.
+# .npmrc sets prefix=/pi-agent/npm-global so extensions persist across restarts.
+# Written as a literal file because ENV HOME is not yet set to /home/piuser.
 RUN mkdir -p /home/piuser /home/piuser/.ssh \
     && chmod 1777 /home/piuser \
     && chmod 755 /home/piuser/.ssh \

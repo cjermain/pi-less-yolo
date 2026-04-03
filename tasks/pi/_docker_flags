@@ -72,10 +72,10 @@ fi
 [[ -n "${PI_CPUS:-}" ]]       && DOCKER_FLAGS+=("--cpus" "${PI_CPUS}")
 [[ -n "${PI_PIDS_LIMIT:-}" ]] && DOCKER_FLAGS+=("--pids-limit" "${PI_PIDS_LIMIT}")
 
-# Local model servers (Ollama, LM Studio, vLLM): PI_LOCAL_MODELS=1 shares the
-# host network namespace so localhost URLs work identically to native pi.
-# Security: all host ports become reachable from the container. See README.
-# macOS: --network=host uses the Docker Desktop VM network, not the Mac's.
+# PI_LOCAL_MODELS=1: share the host network namespace so local model servers
+# (Ollama, LM Studio, vLLM) are reachable at their native localhost URLs.
+# Security: all host ports become reachable. macOS: uses the Docker Desktop VM
+# network — localhost on the Mac is not reachable; use host.docker.internal.
 if [[ -n "${PI_LOCAL_MODELS:-}" ]]; then
   DOCKER_FLAGS+=("--network=host")
 fi
