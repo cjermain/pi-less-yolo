@@ -89,7 +89,7 @@ mise run ci      # lint + docker build + smoke test
 
 ### Renovate
 
-`renovate.json` uses `config:recommended` with two managers disabled (Docker image digests and GitHub Actions — those are handled by Dependabot) and four custom `regexManagers` that track versions embedded directly in `Dockerfile` and `README.md`:
+`renovate.json` uses `config:recommended` and applies a 72-hour minimum release age to all dependencies except `@mariozechner/pi-coding-agent`. It disables Docker image digest and GitHub Actions managers (handled by Dependabot) and uses four `regexManagers` to track versions in `Dockerfile` and `README.md`:
 
 | Dependency | Location | Datasource |
 |---|---|---|
@@ -102,7 +102,7 @@ Both `Dockerfile` and `README.md` must be updated together when pi's version cha
 
 ### Dependabot
 
-`.github/dependabot.yml` runs weekly on a 7-day cooldown for:
+`.github/dependabot.yml` runs weekly on a 3-day cooldown for:
 
 - **Docker** — the `FROM` image digest in `Dockerfile`
 - **GitHub Actions** — action versions in `.github/workflows/`

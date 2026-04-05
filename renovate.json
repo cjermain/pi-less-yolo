@@ -3,6 +3,13 @@
   "extends": ["config:recommended"],
   "docker": { "enabled": false },
   "github-actions": { "enabled": false },
+  "minimumReleaseAge": "72 hours",
+  "packageRules": [
+    {
+      "depNames": ["@mariozechner/pi-coding-agent"],
+      "minimumReleaseAge": null
+    }
+  ],
   "regexManagers": [
     {
       "fileMatch": ["^Dockerfile$"],
