@@ -3,11 +3,11 @@
   "extends": ["config:recommended"],
   "docker": { "enabled": false },
   "github-actions": { "enabled": false },
-  "minimumReleaseAge": "72 hours",
+  "minimumReleaseAge": "3 days",
   "packageRules": [
     {
       "depNames": ["@mariozechner/pi-coding-agent"],
-      "minimumReleaseAge": null
+      "minimumReleaseAge": "0 days"
     }
   ],
   "regexManagers": [
