@@ -31,7 +31,7 @@ If you use [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Aider,
 ## Prerequisites
 
 - [mise](https://mise.jdx.dev/installing-mise.html) >= 2024.12.0
-- [Docker](https://docs.docker.com/get-docker/) (Desktop on macOS, Engine on Linux)
+- [Docker](https://docs.docker.com/get-docker/) (Desktop on macOS, Engine on Linux) or [Podman](https://podman.io/getting-started/installation) (aliased as `docker`)
 - git
 
 ## Install
@@ -309,6 +309,24 @@ To fix this permanently instead:
 2. Add to `/etc/docker/daemon.json`: `{ "dns": ["<upstream-ip>"] }`
 3. Restart dockerd
 4. Remove the `--network=host` line from `tasks/pi/build`
+
+## Podman support
+
+`pi-less-yolo` works with [Podman](https://podman.io) as a drop-in Docker replacement. Podman is automatically detected when the `docker` command is aliased or symlinked to `podman`.
+
+The runtime adds `--userns=keep-id` when podman is detected, which properly maps user namespaces and avoids TTY ownership errors.
+
+Most Linux distributions provide podman with a `docker` compatibility alias. If you don't have one:
+
+```bash
+# On most systems, create the alias:
+alias docker=podman
+
+# Or symlink (system-wide, requires root):
+sudo ln -s $(which podman) /usr/local/bin/docker
+```
+
+All tasks (`pi`, `pi:readonly`, `pi:build`, `pi:shell`) work identically with podman.
 
 ## Customising the container
 

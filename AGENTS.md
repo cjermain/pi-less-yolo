@@ -12,7 +12,7 @@ Dockerfile, and a CI smoke test.
 | Path | Role |
 |---|---|
 | `Dockerfile` | Single-stage Chainguard node image; installs curl, git, tmux, mise, uv, Python, and pi. Entrypoint synthesises a `/etc/passwd` entry for the runtime UID so tools like SSH can resolve the user. |
-| `tasks/pi/_docker_flags` | Sourced (not executed) by all pi tasks; defines `DOCKER_FLAGS` (security options, volume mounts, env-var forwarding) |
+| `tasks/pi/_docker_flags` | Sourced (not executed) by all pi tasks; defines `DOCKER_FLAGS` (security options, volume mounts, env-var forwarding); detects podman and adds `--userns=keep-id` when needed |
 | `tasks/pi/_default` | `mise run pi` — launches the agent in the container |
 | `tasks/pi/readonly` | `mise run pi:readonly` — launches the agent with the project directory mounted read-only and file-modification tools disabled |
 | `tasks/pi/build` | `mise run pi:build` — builds the Docker image |
@@ -70,6 +70,7 @@ mise run ci      # lint + docker build + smoke test
 - `tasks/pi/_docker_flags` is *sourced*, not executed — no shebang, not executable.
 - `#MISE raw=true` and `#MISE dir="{{cwd}}"` on `_default` and `shell` are intentional: they preserve raw terminal I/O and ensure the container's working directory matches the caller's. Do not remove them.
 - Docker security flags (`--cap-drop=ALL`, `--security-opt=no-new-privileges`, `--user $(id -u):$(id -g)`) are non-negotiable. Do not weaken them.
+- **Podman support:** `tasks/pi/_docker_flags` detects podman via `docker --version` output and adds `--userns=keep-id` to fix TTY ownership errors. The `docker` command must be aliased or symlinked to `podman` for detection to work.
 - `--network=host` appears in `pi:build` on Linux (DNS workaround) and in runtime `DOCKER_FLAGS` when `PI_LOCAL_MODELS=1` is set. It must not appear unconditionally in runtime `DOCKER_FLAGS`.
 - When adding a new provider API key: add it to the `PI_ENV_VARS` array in `tasks/pi/_docker_flags` **and** the auth table in `README.md`.
 - Host-side control variables consumed by `_docker_flags`; not forwarded into the container via `PI_ENV_VARS`:

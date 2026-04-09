@@ -3,6 +3,14 @@
 
 PI_IMAGE="pi-less-yolo:latest"
 
+# Detect if we're using podman instead of docker
+# (podman emits a message when invoked as 'docker')
+DOCKER_CMD="docker"
+DOCKER_VERSION_OUTPUT="$(docker --version 2>&1)"
+if echo "${DOCKER_VERSION_OUTPUT}" | grep -q podman; then
+  DOCKER_CMD="podman"
+fi
+
 docker image inspect "${PI_IMAGE}" > /dev/null 2>&1 || mise run pi:build
 
 # Pre-create so Docker doesn't auto-create it as root (breaking writes by the
@@ -35,6 +43,12 @@ DOCKER_FLAGS=(
   "--env" "TERM=${TERM:-xterm-256color}"
   "--env" "COLORTERM=${COLORTERM:-truecolor}"
 )
+
+# Podman-specific: use --userns=keep-id to properly map the user namespace
+# and avoid "crun: chown `/dev/pts/0`: Invalid argument" errors.
+if [[ "${DOCKER_CMD}" == "podman" ]]; then
+  DOCKER_FLAGS+=("--userns=keep-id")
+fi
 
 # Forward pi-related env vars and API keys if set on the host.
 # Auth file (~/.pi/agent/auth.json) takes priority over these if present.
