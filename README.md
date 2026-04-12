@@ -316,10 +316,16 @@ To fix this permanently instead:
 
 The runtime adds `--userns=keep-id` when podman is detected, which properly maps user namespaces and avoids TTY ownership errors.
 
-Most Linux distributions provide podman with a `docker` compatibility alias. If you don't have one:
+Set `PI_CONTAINER_RUNTIME=podman` to use podman explicitly without an alias:
 
 ```bash
-# On most systems, create the alias:
+PI_CONTAINER_RUNTIME=podman mise run pi
+```
+
+Alternatively, most Linux distributions provide a `docker` compatibility alias. If you don't have one:
+
+```bash
+# Session alias:
 alias docker=podman
 
 # Or symlink (system-wide, requires root):
