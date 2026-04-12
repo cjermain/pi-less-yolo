@@ -12,10 +12,11 @@ REPO_ROOT="${MISE_TASK_DIR}/../.."
 #   1. Find your upstream nameserver:  resolvectl status | grep "DNS Server"
 #   2. Add to /etc/docker/daemon.json: { "dns": ["<upstream-ip>"] }
 #   3. Restart dockerd and remove the --network=host branch below.
+DOCKER_CMD="${PI_CONTAINER_RUNTIME:-docker}"
 BUILD_FLAGS=()
 [[ "$(uname -s)" == "Linux" ]] && BUILD_FLAGS+=("--network=host")
 
-docker build "${BUILD_FLAGS[@]}" \
+"${DOCKER_CMD}" build "${BUILD_FLAGS[@]}" \
   -f "${REPO_ROOT}/Dockerfile" \
   -t "pi-less-yolo:latest" \
   "${REPO_ROOT}"

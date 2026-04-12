@@ -23,4 +23,4 @@ if [[ -z "${PI_NO_CONTAINER_PROMPT:-}" ]]; then
   )
 fi
 
-docker run "${DOCKER_FLAGS[@]}" "${PI_IMAGE}" "${PI_ARGS[@]}" "$@"
+"${DOCKER_CMD}" run "${DOCKER_FLAGS[@]}" "${PI_IMAGE}" "${PI_ARGS[@]}" "$@"

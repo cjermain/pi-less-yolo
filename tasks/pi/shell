@@ -11,4 +11,4 @@ DOCKER_FLAGS+=("--interactive")
 [ -t 0 ] && [ -t 1 ] && DOCKER_FLAGS+=("--tty")
 
 # Pass bash as CMD so the entrypoint runs passwd synthesis before dropping to a shell.
-docker run "${DOCKER_FLAGS[@]}" "${PI_IMAGE}" bash
+"${DOCKER_CMD}" run "${DOCKER_FLAGS[@]}" "${PI_IMAGE}" bash
