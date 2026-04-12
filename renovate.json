@@ -38,7 +38,8 @@
       "customType": "regex",
       "managerFilePatterns": ["/^Dockerfile$/"],
       "matchStrings": [
-        "uv python install (?<currentValue>[\\d.]+)"
+        "uv python install (?<currentValue>[\\d.]+)",
+        "uv python find (?<currentValue>[\\d.]+)"
       ],
       "depNameTemplate": "python",
       "datasourceTemplate": "github-tags",
