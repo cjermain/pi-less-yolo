@@ -12,5 +12,5 @@ _inner='
 '
 PI_MEMORY=512m PI_CPUS=2 PI_PIDS_LIMIT=64 bash -c '
   source tasks/pi/_docker_flags
-  docker run "${DOCKER_FLAGS[@]}" pi-less-yolo:latest bash -c "$1"
+  "${DOCKER_CMD}" run "${DOCKER_FLAGS[@]}" pi-less-yolo:latest bash -c "$1"
 ' -- "$_inner"

@@ -9,7 +9,7 @@ _inner='
 result=$(
   _PI_WORKDIR_RO=1 bash -c '
     source tasks/pi/_docker_flags
-    docker run "${DOCKER_FLAGS[@]}" pi-less-yolo:latest bash -c "$1"
+    "${DOCKER_CMD}" run "${DOCKER_FLAGS[@]}" pi-less-yolo:latest bash -c "$1"
   ' -- "$_inner"
 )
 

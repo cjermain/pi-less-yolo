@@ -2,4 +2,5 @@
 #MISE description="Smoke test that pi starts and reports its version"
 set -euo pipefail
 
-docker run --rm pi-less-yolo:latest --version
+DOCKER_CMD="${PI_CONTAINER_RUNTIME:-docker}"
+"${DOCKER_CMD}" run --rm pi-less-yolo:latest --version
