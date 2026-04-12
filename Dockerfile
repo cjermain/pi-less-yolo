@@ -1,4 +1,4 @@
-FROM cgr.dev/chainguard/node:latest-dev@sha256:144b22d028a64686a75b2010974bae5c50c4a58120400238282b85e23e77f379
+FROM cgr.dev/chainguard/node:latest-dev@sha256:d201cee80fc4bd2881571d9d7c25c3551a32281d655409c80d9c600214afa5cf
 
 # openssh-client: ssh binary for git-over-SSH (PI_SSH_AGENT=1) and ssh-add.
 USER root
@@ -16,7 +16,7 @@ apk add --no-cache gpg gpg-agent
 gpg --import /tmp/mise-release.asc
 curl -fsSL https://mise.jdx.dev/install.sh.sig -o /tmp/mise-install.sh.sig
 gpg --decrypt /tmp/mise-install.sh.sig > /tmp/mise-install.sh
-MISE_VERSION=2026.4.4 MISE_INSTALL_PATH=/usr/local/bin/mise sh /tmp/mise-install.sh
+MISE_VERSION=2026.4.7 MISE_INSTALL_PATH=/usr/local/bin/mise sh /tmp/mise-install.sh
 rm /tmp/mise-install.sh.sig /tmp/mise-install.sh
 apk del gpg gpg-agent
 EOF
@@ -28,9 +28,9 @@ ARG MISE_DATA_DIR=/usr/local/share/mise
 # Install uv via mise and expose uv and uvx on PATH.
 RUN <<'EOF'
 set -e
-mise install uv@0.11.3
-ln -s "$(mise exec uv@0.11.3 -- which uv)" /usr/local/bin/uv
-ln -s "$(mise exec uv@0.11.3 -- which uvx)" /usr/local/bin/uvx
+mise install uv@0.11.6
+ln -s "$(mise exec uv@0.11.6 -- which uv)" /usr/local/bin/uv
+ln -s "$(mise exec uv@0.11.6 -- which uvx)" /usr/local/bin/uvx
 EOF
 
 ENV UV_PYTHON_INSTALL_DIR=/usr/local/share/uv/python
