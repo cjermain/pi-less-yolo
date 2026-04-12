@@ -234,7 +234,7 @@ PI_SSH_AGENT=1 mise run pi
 
 Or export it in your shell profile to make it permanent.
 
-> **Security note:** a compromised container can authenticate as you to any SSH server your agent has loaded. Review loaded keys with `ssh-add -l` before enabling. On macOS, Docker Desktop exposes the host SSH agent via a fixed path inside the VM — no additional setup is needed beyond setting the variable. On Linux, ensure `ssh-agent` is running and `SSH_AUTH_SOCK` is exported in your shell environment.
+> **Security note:** a compromised container can authenticate as you to any SSH server your agent has loaded. Review loaded keys with `ssh-add -l` before enabling. On macOS, Docker Desktop exposes the host SSH agent via a fixed path inside the VM. The socket is created root-owned with restricted permissions; the root group (GID 0) is added as a supplementary group so the non-root container user can access it — no additional setup is needed. On Linux, ensure `ssh-agent` is running and `SSH_AUTH_SOCK` is exported in your shell environment.
 
 ### Local models (Ollama, LM Studio, vLLM)
 

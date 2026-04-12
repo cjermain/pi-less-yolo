@@ -114,10 +114,13 @@ if [[ -n "${PI_SSH_AGENT:-}" ]]; then
     DOCKER_FLAGS+=("--volume" "${HOME}/.ssh/config:/home/piuser/.ssh/config:ro")
   fi
 
-  if [[ "$(uname -s)" == "Darwin" ]]; then
+  if [[ "$(uname -s)" == "Darwin" ]] && [[ "${DOCKER_CMD}" == "docker" ]]; then
+    # Docker Desktop creates the socket root:root 660; add GID 0 so the
+    # non-root user can access it. --cap-drop=ALL limits the exposure.
     DOCKER_FLAGS+=(
       "--mount" "type=bind,src=/run/host-services/ssh-auth.sock,target=/run/host-services/ssh-auth.sock"
       "--env" "SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock"
+      "--group-add" "0"
     )
   elif [[ -S "${SSH_AUTH_SOCK:-}" ]]; then
     DOCKER_FLAGS+=(
