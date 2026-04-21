@@ -120,7 +120,7 @@ mise run update
 mise run pi:upgrade
 ```
 
-Fetches the latest `@mariozechner/pi-coding-agent` version from npm, updates `ARG PI_VERSION` in `Dockerfile`, and rebuilds the image.
+Fetches the latest `@mariozechner/pi-coding-agent` version from npm, updates the `npm install -g` line in `Dockerfile`, and rebuilds the image.
 
 ## Health check
 
@@ -359,7 +359,7 @@ To modify the container — adding tools, changing the base image, pinning diffe
 mise run pi:build
 ```
 
-The `ARG PI_VERSION` line at the top of `Dockerfile` controls the pi version. `mise run pi:upgrade` updates it automatically; you can also edit it by hand.
+The `npm install -g` line near the bottom of `Dockerfile` pins the pi version. `mise run pi:upgrade` updates it automatically; you can also edit the version string by hand.
 
 ## Related projects
 
