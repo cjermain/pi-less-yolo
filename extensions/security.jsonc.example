@@ -1,0 +1,12 @@
+{
+  // Global defaults for the security extension.
+  // Per-project overrides live at <project>/.pi/security.jsonc
+  "enabled": true,
+  "filesystem": {
+    "denyRead":  ["~/.ssh/**", "~/.aws/**", "~/.gnupg/**", ".env", ".env.*"],
+    "denyWrite": [".env", ".env.*", "*.pem", "*.key", "id_rsa", "id_ed25519"]
+  },
+  "bash": {
+    "deny": ["sudo", "rm -rf", "re:>\\s*/dev/sd[a-z]", "mkfs"]
+  }
+}
