@@ -33,7 +33,7 @@ describe("loadFile", () => {
     const r = loadFile(join(dir, "nope.json"));
     assert.deepEqual(r, {
       enabled: undefined,
-      filesystem: { denyRead: [], denyWrite: [] },
+      filesystem: { denyRead: [], denyWrite: [], mountMask: [], isolateDirs: [] },
       bash: { deny: [] },
     });
   });
@@ -41,14 +41,49 @@ describe("loadFile", () => {
     const p = join(dir, "g.json");
     writeFileSync(p, JSON.stringify({
       enabled: false,
-      filesystem: { denyRead: ["a"], denyWrite: ["b"] },
+      filesystem: {
+        denyRead: ["a"],
+        denyWrite: ["b"],
+        mountMask: [".env"],
+        isolateDirs: ["node_modules"],
+      },
       bash: { deny: ["sudo"] },
     }));
     assert.deepEqual(loadFile(p), {
       enabled: false,
-      filesystem: { denyRead: ["a"], denyWrite: ["b"] },
+      filesystem: {
+        denyRead: ["a"],
+        denyWrite: ["b"],
+        mountMask: [".env"],
+        isolateDirs: ["node_modules"],
+      },
       bash: { deny: ["sudo"] },
     });
+  });
+  it("absent mountMask and isolateDirs default to empty arrays", () => {
+    const p = join(dir, "no-host-fields.json");
+    writeFileSync(p, JSON.stringify({
+      filesystem: { denyRead: ["a"], denyWrite: ["b"] },
+      bash: { deny: [] },
+    }));
+    const r = loadFile(p);
+    assert.deepEqual(r.filesystem.mountMask, []);
+    assert.deepEqual(r.filesystem.isolateDirs, []);
+  });
+  it("drops non-string entries from mountMask and isolateDirs", () => {
+    const p = join(dir, "mixed-types.json");
+    writeFileSync(p, JSON.stringify({
+      filesystem: {
+        denyRead: [],
+        denyWrite: [],
+        mountMask: [".env", 42, null, ".env.local"],
+        isolateDirs: [true, "node_modules", {}, ".venv"],
+      },
+      bash: { deny: [] },
+    }));
+    const r = loadFile(p);
+    assert.deepEqual(r.filesystem.mountMask, [".env", ".env.local"]);
+    assert.deepEqual(r.filesystem.isolateDirs, ["node_modules", ".venv"]);
   });
   it("parses .jsonc with comments", () => {
     const p = join(dir, "g.jsonc");
@@ -83,13 +118,20 @@ describe("loadConfig", () => {
     writeFileSync(join(dir, "security.jsonc"), `{
       // rules
       "enabled": true,
-      "filesystem": { "denyRead": ["~/.ssh/**"], "denyWrite": ["*.pem"] },
+      "filesystem": {
+        "denyRead": ["~/.ssh/**"],
+        "denyWrite": ["*.pem"],
+        "mountMask": [".env", ".env.local"],
+        "isolateDirs": ["node_modules", ".venv"]
+      },
       "bash": { "deny": ["sudo"] }
     }`);
     const r = loadConfig({ dir });
     assert.equal(r.enabled, true);
     assert.deepEqual(r.filesystem.denyRead, ["~/.ssh/**"]);
     assert.deepEqual(r.filesystem.denyWrite, ["*.pem"]);
+    assert.deepEqual(r.filesystem.mountMask, [".env", ".env.local"]);
+    assert.deepEqual(r.filesystem.isolateDirs, ["node_modules", ".venv"]);
     assert.deepEqual(r.bash.deny, ["sudo"]);
   });
   it("falls back to security.json when .jsonc is absent", () => {
@@ -259,7 +301,7 @@ describe("index.ts — session_start", () => {
     const pi = makePi();
     register(pi as any, {
       enabled: true,
-      filesystem: { denyRead: ["a"], denyWrite: ["b", "c"] },
+      filesystem: { denyRead: ["a"], denyWrite: ["b", "c"], mountMask: [], isolateDirs: [] },
       bash: { deny: ["sudo"] },
     });
     const { ctx: c, notifications: n } = ctx(true);
@@ -284,7 +326,11 @@ describe("index.ts — session_start", () => {
   });
   it("announces disabled when !enabled", () => {
     const pi = makePi();
-    register(pi as any, { enabled: false, filesystem: { denyRead: [], denyWrite: [] }, bash: { deny: [] } });
+    register(pi as any, {
+      enabled: false,
+      filesystem: { denyRead: [], denyWrite: [], mountMask: [], isolateDirs: [] },
+      bash: { deny: [] },
+    });
     const { ctx: c, notifications: n, statuses } = ctx(true);
     pi.handlers.session_start({}, c);
     assert.match(n[0].msg, /disabled/);
@@ -292,7 +338,11 @@ describe("index.ts — session_start", () => {
   });
   it("silent when !hasUI", () => {
     const pi = makePi();
-    register(pi as any, { enabled: true, filesystem: { denyRead: [], denyWrite: [] }, bash: { deny: [] } });
+    register(pi as any, {
+      enabled: true,
+      filesystem: { denyRead: [], denyWrite: [], mountMask: [], isolateDirs: [] },
+      bash: { deny: [] },
+    });
     const { ctx: c, notifications: n, statuses } = ctx(false);
     pi.handlers.session_start({}, c);
     assert.equal(n.length, 0);
@@ -325,7 +375,11 @@ describe("index.ts — /security command", () => {
   });
   it("registers the command even when disabled so users can inspect state", async () => {
     const pi = makePi();
-    register(pi as any, { enabled: false, filesystem: { denyRead: [], denyWrite: [] }, bash: { deny: [] } });
+    register(pi as any, {
+      enabled: false,
+      filesystem: { denyRead: [], denyWrite: [], mountMask: [], isolateDirs: [] },
+      bash: { deny: [] },
+    });
     assert.ok(pi.commands.security);
     const { ctx: c, notifications: n } = ctx(true);
     await pi.commands.security.handler("", c);
@@ -334,7 +388,11 @@ describe("index.ts — /security command", () => {
 });
 
 function configWith(denyRead: string[] = [], denyWrite: string[] = [], bashDeny: string[] = []): SecurityConfig {
-  return { enabled: true, filesystem: { denyRead, denyWrite }, bash: { deny: bashDeny } };
+  return {
+    enabled: true,
+    filesystem: { denyRead, denyWrite, mountMask: [], isolateDirs: [] },
+    bash: { deny: bashDeny },
+  };
 }
 
 describe("index.ts — tool_call for read-ish tools", () => {

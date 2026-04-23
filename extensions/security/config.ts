@@ -1,28 +1,46 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join as joinPath } from "node:path";
 
+// mountMask and isolateDirs are host-side only: the container runtime reads
+// them before pi starts. The extension parses them so the schema stays
+// accurate and writers get feedback, but never acts on them at runtime.
 export interface SecurityConfig {
   enabled: boolean;
-  filesystem: { denyRead: string[]; denyWrite: string[] };
+  filesystem: {
+    denyRead: string[];
+    denyWrite: string[];
+    mountMask: string[];
+    isolateDirs: string[];
+  };
   bash: { deny: string[] };
 }
 
 export interface PartialConfig {
   enabled: boolean | undefined;
-  filesystem: { denyRead: string[]; denyWrite: string[] };
+  filesystem: {
+    denyRead: string[];
+    denyWrite: string[];
+    mountMask: string[];
+    isolateDirs: string[];
+  };
   bash: { deny: string[] };
 }
 
 const EMPTY_PARTIAL: PartialConfig = {
   enabled: undefined,
-  filesystem: { denyRead: [], denyWrite: [] },
+  filesystem: { denyRead: [], denyWrite: [], mountMask: [], isolateDirs: [] },
   bash: { deny: [] },
 };
 
 function clone(p: PartialConfig): PartialConfig {
   return {
     enabled: p.enabled,
-    filesystem: { denyRead: [...p.filesystem.denyRead], denyWrite: [...p.filesystem.denyWrite] },
+    filesystem: {
+      denyRead: [...p.filesystem.denyRead],
+      denyWrite: [...p.filesystem.denyWrite],
+      mountMask: [...p.filesystem.mountMask],
+      isolateDirs: [...p.filesystem.isolateDirs],
+    },
     bash: { deny: [...p.bash.deny] },
   };
 }
@@ -56,6 +74,8 @@ export function loadFile(path: string): PartialConfig {
     filesystem: {
       denyRead: asStringArray(fs.denyRead),
       denyWrite: asStringArray(fs.denyWrite),
+      mountMask: asStringArray(fs.mountMask),
+      isolateDirs: asStringArray(fs.isolateDirs),
     },
     bash: { deny: asStringArray(bash.deny) },
   };
@@ -82,6 +102,8 @@ export function loadConfig(opts: LoadOptions): SecurityConfig {
     filesystem: {
       denyRead: [...p.filesystem.denyRead],
       denyWrite: [...p.filesystem.denyWrite],
+      mountMask: [...p.filesystem.mountMask],
+      isolateDirs: [...p.filesystem.isolateDirs],
     },
     bash: { deny: [...p.bash.deny] },
   };
@@ -89,7 +111,7 @@ export function loadConfig(opts: LoadOptions): SecurityConfig {
 
 export const EMPTY: SecurityConfig = {
   enabled: true,
-  filesystem: { denyRead: [], denyWrite: [] },
+  filesystem: { denyRead: [], denyWrite: [], mountMask: [], isolateDirs: [] },
   bash: { deny: [] },
 };
 
