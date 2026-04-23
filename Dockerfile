@@ -90,10 +90,15 @@ mkdir -p /pi-agent/extensions
 if [ -d "/host-extensions" ]; then
     cp -r /host-extensions/. /pi-agent/extensions/
 fi
+# --loglevel=error silences builtin-config deprecation and transitive-dep
+# deprecation warnings that come from pi's deps / the base image's npmrc
+# and are out of our hands. --no-audit / --no-fund drop the per-startup
+# vulnerability and funding summaries. Real install failures still fail
+# the entrypoint under `set -e`.
 for ext in /pi-agent/extensions/*/; do
     [ -d "${ext}node_modules" ] && rm -rf "${ext}node_modules"
     [ -f "${ext}package.json" ] && \
-        (cd "${ext}" && npm install)
+        (cd "${ext}" && npm install --loglevel=error --no-audit --no-fund)
 done
 
 # Pass through to a shell when invoked via `pi:shell`; otherwise run pi.
