@@ -7,6 +7,9 @@ RUN apk add --no-cache \
         ca-certificates \
         git \
         openssh-client \
+        ripgrep \
+        socat \
+        bubblewrap \
         tmux
 
 # Install mise (GPG-verified via mise-release.asc).
@@ -77,6 +80,21 @@ if ! grep -q "^[^:]*:[^:]*:$(id -u):" /etc/passwd; then
     printf 'piuser:x:%d:%d:piuser:%s:/bin/sh\n' \
         "$(id -u)" "$(id -g)" "${HOME}" >> /etc/passwd
 fi
+
+# Copy host extensions (mounted read-only at /host-extensions) into the
+# tmpfs at /pi-agent/extensions, then install node_modules. Native deps
+# compile in the container; host extensions are never modified. The source
+# is outside /pi-agent so Docker's mount-point mkdir doesn't leak an empty
+# host-extensions directory back to the host via the /pi-agent bind.
+mkdir -p /pi-agent/extensions
+if [ -d "/host-extensions" ]; then
+    cp -r /host-extensions/. /pi-agent/extensions/
+fi
+for ext in /pi-agent/extensions/*/; do
+    [ -d "${ext}node_modules" ] && rm -rf "${ext}node_modules"
+    [ -f "${ext}package.json" ] && \
+        (cd "${ext}" && npm install)
+done
 
 # Pass through to a shell when invoked via `pi:shell`; otherwise run pi.
 case "${1:-}" in

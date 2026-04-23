@@ -56,6 +56,36 @@ if [[ "${DOCKER_CMD}" == "podman" ]]; then
   DOCKER_FLAGS+=("--userns=keep-id")
 fi
 
+# Extensions: overlay /pi-agent/extensions (nested in the /pi-agent bind
+# mount) with an in-container tmpfs so `npm install` writes node_modules
+# into container memory instead of back to the host. Expose the host copy
+# read-only at /host-extensions (outside /pi-agent so Docker's auto-created
+# mount-point directory doesn't leak back to the host); the entrypoint
+# seeds the tmpfs from there. exec lets node_modules/.bin binaries run;
+# uid/gid make the tmpfs writable by the non-root container user.
+if [[ -d "${HOME}/.pi/agent/extensions" ]]; then
+  DOCKER_FLAGS+=("--volume" "${HOME}/.pi/agent/extensions:/host-extensions:ro")
+fi
+DOCKER_FLAGS+=("--tmpfs" "/pi-agent/extensions:exec,uid=$(id -u),gid=$(id -g)")
+
+# Workspace isolation: the $(pwd) bind mount would expose host-built
+# dependency dirs (node_modules, .venv, ...) whose native binaries are
+# compiled for the host arch (e.g., macOS) and won't run in the Linux
+# container. Shadow each configured dir with a per-project host overlay
+# under ~/.pi/agent/overlays/<project-hash>/ so the container gets its
+# own (Linux) tree that persists across runs and the host project's tree
+# stays untouched. Customize via PI_ISOLATE_DIRS (space-separated); set
+# PI_ISOLATE_DIRS="" to disable.
+PI_ISOLATE_DIRS="${PI_ISOLATE_DIRS-node_modules .venv}"
+if [[ -n "${PI_ISOLATE_DIRS}" ]]; then
+  project_hash=$(printf '%s' "$(pwd)" | shasum -a 256 | cut -c1-16)
+  overlay_root="${HOME}/.pi/agent/overlays/${project_hash}"
+  for rel in ${PI_ISOLATE_DIRS}; do
+    mkdir -p "${overlay_root}/${rel}"
+    DOCKER_FLAGS+=("--volume" "${overlay_root}/${rel}:$(pwd)/${rel}")
+  done
+fi
+
 # Forward pi-related env vars and API keys if set on the host.
 # Auth file (~/.pi/agent/auth.json) takes priority over these if present.
 PI_ENV_VARS=(
