@@ -97,11 +97,27 @@ alias pi='mise run pi'
 | Task | Description |
 |---|---|
 | `mise run pi` | Run the pi AI coding agent in the sandboxed container |
+| `mise run pi:pi-acp` | Run pi-acp to provide Agent Client Protocol (ACP) stdio connection for IDE's to connect (same mounts as pi)|
 | `mise run pi:readonly` | Run pi with the project directory mounted read-only and file-modification tools disabled |
 | `mise run pi:build` | Build or rebuild the Docker container image |
 | `mise run pi:shell` | Open a bash shell in the container (same mounts as `pi`) |
 | `mise run pi:upgrade` | Upgrade pi to the latest npm release and rebuild |
 | `mise run pi:health` | Check the setup for common problems |
+
+## Agent Client Protocol (ACP) Connections
+
+The `mise run pi:pi-acp` task command can be utilzed for connecting IDE's over [ACP](https://agentclientprotocol.com/overview/introduction) to the Pi coding agent in the sandboxed container.
+
+The task will install [pi-acp](https://github.com/svkozak/pi-acp) to the `/pi-agent/npm-global` shared directory, if not already installed.
+
+Most IDE's will expect to run the `pi-acp` command, so add this to your shell profile:
+
+```bash
+alias pi-acp='mise run pi:pi-acp'
+```
+
+To update the package run the task `mise run pi:shell` and once inside the shell container run `npm install -g pi-acp` at the prompt.
+
 
 ## Staying current
 
