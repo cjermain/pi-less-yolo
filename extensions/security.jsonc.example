@@ -1,0 +1,35 @@
+{
+  // Security extension config. Copy to ~/.pi/agent/extensions/security.jsonc
+  // and edit. The file is read in two places:
+  //   1. Inside the container by the security extension  → enforces denyRead,
+  //      denyWrite, bash.deny on the agent's tool calls.
+  //   2. On the host by tasks/pi/_docker_flags before the container starts →
+  //      applies mountMask and isolateDirs as Docker bind mounts.
+  "enabled": true,
+
+  "filesystem": {
+    // In-container rules. Matched against the path argument of read-ish and
+    // write-ish tools. Globs (*, **) and "re:<regex>" are supported.
+    "denyRead":  ["~/.ssh/**", "~/.aws/**", "~/.gnupg/**", ".env", ".env.*"],
+    "denyWrite": [".env", ".env.*", "*.pem", "*.key", "id_rsa", "id_ed25519"],
+
+    // Host-enforced: bind /dev/null over each listed path (relative to the
+    // project root) so nothing inside the container — bash, scripts, child
+    // processes — can read the real file. Use this for secrets that bash
+    // would otherwise bypass denyRead for. To allow a specific env file,
+    // keep it outside the mask list (e.g., commit an ".env.safe" with only
+    // non-sensitive values and reference that from your scripts).
+    "mountMask": [".env", ".env.local", ".env.production"],
+
+    // Host-enforced: per-project overlay dirs. The $(pwd) bind mount would
+    // otherwise leak host-built native binaries (macOS → Linux) into the
+    // container. Each entry is shadowed by a fresh Linux tree under
+    // ~/.pi/agent/overlays/<project-hash>/<entry>. Leave empty to disable.
+    "isolateDirs": ["node_modules", ".venv"]
+  },
+
+  "bash": {
+    // Matched against the full command string. Globs and "re:<regex>" work.
+    "deny": ["sudo", "re:>\\s*/dev/sd[a-z]", "mkfs"]
+  }
+}

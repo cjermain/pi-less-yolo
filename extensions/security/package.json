@@ -1,0 +1,21 @@
+{
+  "name": "pi-extension-security",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./security.ts"
+    ]
+  },
+  "scripts": {
+    "clean": "echo 'nothing to clean'",
+    "build": "echo 'nothing to build'",
+    "check": "tsx --test test.ts"
+  },
+  "devDependencies": {
+    "@mariozechner/pi-coding-agent": "^0.69.0",
+    "@types/node": "^22.19.17",
+    "tsx": "^4.19.0"
+  }
+}
