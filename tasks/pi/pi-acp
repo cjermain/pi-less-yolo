@@ -11,4 +11,4 @@ DOCKER_FLAGS+=("--interactive")
 [ -t 0 ] && [ -t 1 ] && DOCKER_FLAGS+=("--tty")
 
 # Will install pi-acp, to /pi-agent/npm-global if not there and/or starts pi-acp
-"${DOCKER_CMD}" run "${DOCKER_FLAGS[@]}" "${PI_IMAGE}" sh -c 'if ! [ `which pi-acp` ]; then npm install -g pi-acp && pi-acp; else pi-acp; fi'
+"${DOCKER_CMD}" run "${DOCKER_FLAGS[@]}" "${PI_IMAGE}" sh -c 'if ! command -v pi-acp > /dev/null 2>&1; then npm install -g pi-acp && pi-acp; else pi-acp; fi'
