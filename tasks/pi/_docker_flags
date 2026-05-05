@@ -135,3 +135,28 @@ if [[ -n "${PI_SSH_AGENT:-}" ]]; then
     echo "warning: PI_SSH_AGENT=1 but SSH_AUTH_SOCK is not set or is not a socket — SSH agent forwarding disabled" >&2
   fi
 fi
+
+# If pi is started in a sub-directory of a git repo or in a completely
+# sparate worktree folder, this will mount the common .git dir to /git-data
+# and set GIT_DIR environment variable to use it. This will also volume map
+# the underlying toplevel repo directory (which may just be a worktree), in
+# read-only, so that `git status' won't show a bunch of missing files, etc. and to
+# ensure .gitignore. The current working directory will lay inside as it normally would.
+# If not in a repo, then nothing happens.
+GIT_DIR="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || echo '')"
+GIT_WORK_TREE="$(git rev-parse --show-toplevel 2>/dev/null || echo '')"
+if [[ -n "${GIT_DIR:-}" ]]; then
+
+  DOCKER_FLAGS+=(
+    "--volume" "${GIT_DIR}:/git-data${_PI_WORKDIR_RO:+:ro}"  # :ro set by pi:readonly
+    "--env" "GIT_DIR=/git-data"
+  )
+  # Can't map the same directory twice, only map if working dir not same as git worktree
+  if [[ "$(pwd)" != "${GIT_WORK_TREE}" ]]; then
+    DOCKER_FLAGS+=(
+      "--volume" "${GIT_WORK_TREE}:${GIT_WORK_TREE}:ro"
+      "--env" "GIT_WORK_TREE=${GIT_WORK_TREE}"
+    )
+  fi
+fi
+
