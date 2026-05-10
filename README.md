@@ -1,13 +1,13 @@
 # pi-less-yolo
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![pi version](https://img.shields.io/badge/pi--coding--agent-0.73.1-blueviolet)](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent)
+[![pi version](https://img.shields.io/badge/pi--coding--agent-0.74.0-blueviolet)](https://github.com/earendil-works/pi/tree/main/packages/coding-agent)
 [![Base Image](https://img.shields.io/badge/base%20image-chainguard%2Fnode-F4835E?logo=docker)](https://images.chainguard.dev/directory/image/node/overview)
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-brightgreen?logo=dependabot)](https://github.com/cjermain/pi-less-yolo/blob/main/.github/dependabot.yml)
 [![mise](https://mise-versions.jdx.dev/badge.svg)](https://mise.jdx.dev)
 [![CI](https://img.shields.io/github/actions/workflow/status/cjermain/pi-less-yolo/ci.yml?style=flat&label=CI)](https://github.com/cjermain/pi-less-yolo/actions/workflows/ci.yml)
 
-> Run [pi-coding-agent](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) (a multi-provider AI coding agent supporting Claude, GPT, Gemini, and [many more](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent#providers--models)) inside an isolated Docker container — limiting the blast radius of agent-driven changes to your mounted working directory.
+> Run [pi-coding-agent](https://github.com/earendil-works/pi/tree/main/packages/coding-agent) (a multi-provider AI coding agent supporting Claude, GPT, Gemini, and [many more](https://github.com/earendil-works/pi/tree/main/packages/coding-agent#providers--models)) inside an isolated Docker container — limiting the blast radius of agent-driven changes to your mounted working directory.
 
 ![pi-less-yolo demo: filesystem isolation proof and AI-assisted bug fix](docs/demo.gif)
 
@@ -136,7 +136,7 @@ mise run update
 mise run pi:upgrade
 ```
 
-Fetches the latest `@mariozechner/pi-coding-agent` version from npm, updates the `npm install -g` line in `Dockerfile`, and rebuilds the image.
+Fetches the latest `@earendil-works/pi-coding-agent` version from npm, updates the `npm install -g` line in `Dockerfile`, and rebuilds the image.
 
 ## Health check
 
@@ -197,7 +197,7 @@ The following environment variables are forwarded from your host into the contai
 
 Pi config variables (`PI_SKIP_VERSION_CHECK`, `PI_CACHE_RETENTION`, `PI_PACKAGE_DIR`) and editor variables (`VISUAL`, `EDITOR`) are also forwarded. No other host environment variables are passed into the container.
 
-**Auth file** (`~/.pi/agent/auth.json`): credentials stored here take priority over environment variables. Use `/login` inside pi to set this up interactively. See [pi's provider docs](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/docs/providers.md) for details.
+**Auth file** (`~/.pi/agent/auth.json`): credentials stored here take priority over environment variables. Use `/login` inside pi to set this up interactively. See [pi's provider docs](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/providers.md) for details.
 
 ## Security model
 
@@ -379,7 +379,7 @@ The `npm install -g` line near the bottom of `Dockerfile` pins the pi version. `
 
 ## Related projects
 
-- [pi-coding-agent](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) — the upstream AI coding agent this repo wraps
+- [pi-coding-agent](https://github.com/earendil-works/pi) — the upstream AI coding agent this repo wraps
 - [mise](https://mise.jdx.dev) — the polyglot dev-tool manager used for task running
 - [Chainguard Images](https://chainguard.dev) — minimal, hardened container base images used here
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — Anthropic's official sandboxed coding agent CLI, a similar concept

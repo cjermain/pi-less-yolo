@@ -91,14 +91,14 @@ mise run ci      # lint + docker build + smoke test
 
 ### Renovate
 
-`renovate.json` uses `config:recommended` and applies a 72-hour minimum release age to all dependencies except `@mariozechner/pi-coding-agent`. It disables Docker image digest and GitHub Actions managers (handled by Dependabot) and uses four `regexManagers` to track versions in `Dockerfile` and `README.md`:
+`renovate.json` uses `config:recommended` and applies a 72-hour minimum release age to all dependencies except `@earendil-works/pi-coding-agent`. It disables Docker image digest and GitHub Actions managers (handled by Dependabot) and uses four `regexManagers` to track versions in `Dockerfile` and `README.md`:
 
 | Dependency | Location | Datasource |
 |---|---|---|
 | `mise` | `MISE_VERSION=` in `Dockerfile` | GitHub Releases (`jdx/mise`) |
 | `uv` | `mise install uv@` / `mise exec uv@` in `Dockerfile` | GitHub Releases (`astral-sh/uv`) |
 | Python | `uv python install <ver>` in `Dockerfile` | GitHub Tags (`python/cpython`) |
-| `@mariozechner/pi-coding-agent` | `npm install -g` line in `Dockerfile` and badge in `README.md` | npm |
+| `@earendil-works/pi-coding-agent` | `npm install -g` line in `Dockerfile` and badge in `README.md` | npm |
 
 Both `Dockerfile` and `README.md` must be updated together when pi's version changes (Renovate handles both via the same `matchStrings` list).
 
