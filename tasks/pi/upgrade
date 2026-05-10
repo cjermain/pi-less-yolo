@@ -12,7 +12,7 @@ DOCKER_CMD="${PI_CONTAINER_RUNTIME:-docker}"
 }
 
 CURRENT=$(perl -ne 'print $1 if /pi-coding-agent@([\d.]+)/' "${DOCKERFILE}")
-LATEST=$("${DOCKER_CMD}" run --rm --entrypoint npm "${PI_IMAGE}" view @mariozechner/pi-coding-agent version)
+LATEST=$("${DOCKER_CMD}" run --rm --entrypoint npm "${PI_IMAGE}" view @earendil-works/pi-coding-agent version)
 
 if [[ "${CURRENT}" == "${LATEST}" ]]; then
   echo "Already at latest pi version: ${CURRENT}"
