@@ -16,7 +16,7 @@ DOCKER_CMD="${PI_CONTAINER_RUNTIME:-docker}"
 BUILD_FLAGS=()
 [[ "$(uname -s)" == "Linux" ]] && BUILD_FLAGS+=("--network=host")
 
-"${DOCKER_CMD}" build "${BUILD_FLAGS[@]}" \
+"${DOCKER_CMD}" build ${BUILD_FLAGS[@]+"${BUILD_FLAGS[@]}"} \
   -f "${REPO_ROOT}/Dockerfile" \
   -t "pi-less-yolo:latest" \
   "${REPO_ROOT}"
