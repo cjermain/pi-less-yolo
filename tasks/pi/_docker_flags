@@ -136,27 +136,27 @@ if [[ -n "${PI_SSH_AGENT:-}" ]]; then
   fi
 fi
 
-# If pi is started in a sub-directory of a git repo or in a completely
-# sparate worktree folder, this will mount the common .git dir to /git-data
-# and set GIT_DIR environment variable to use it. This will also volume map
-# the underlying toplevel repo directory (which may just be a worktree), in
-# read-only, so that `git status' won't show a bunch of missing files, etc. and to
-# ensure .gitignore. The current working directory will lay inside as it normally would.
-# If not in a repo, then nothing happens.
-GIT_DIR="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || echo '')"
-GIT_WORK_TREE="$(git rev-parse --show-toplevel 2>/dev/null || echo '')"
-if [[ -n "${GIT_DIR:-}" ]]; then
-
-  DOCKER_FLAGS+=(
-    "--volume" "${GIT_DIR}:/git-data${_PI_WORKDIR_RO:+:ro}"  # :ro set by pi:readonly
-    "--env" "GIT_DIR=/git-data"
-  )
-  # Can't map the same directory twice, only map if working dir not same as git worktree
-  if [[ "$(pwd)" != "${GIT_WORK_TREE}" ]]; then
+# PI_PARENT_GIT_MOUNT=1: mount the repo's common .git dir when pi is launched
+# from a subdirectory or a separate worktree. Sets GIT_DIR and GIT_WORK_TREE
+# inside the container so git commands work correctly. The .git dir is always
+# mounted read-only. If you need the agent to commit, it should do so through
+# the working-tree path.
+if [[ -n "${PI_PARENT_GIT_MOUNT:-}" ]]; then
+  _pi_git_common_dir="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+  _pi_git_work_tree="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+  if [[ -n "${_pi_git_common_dir}" ]]; then
     DOCKER_FLAGS+=(
-      "--volume" "${GIT_WORK_TREE}:${GIT_WORK_TREE}:ro"
-      "--env" "GIT_WORK_TREE=${GIT_WORK_TREE}"
+      "--volume" "${_pi_git_common_dir}:/git-data${_PI_WORKDIR_RO:+:ro}"  # :ro set by pi:readonly
+      "--env" "GIT_DIR=/git-data"
     )
+    # Mount the worktree root read-only only when it isn't already covered by
+    # the primary $(pwd):$(pwd) mount — i.e. launching from a subdirectory or
+    # a linked worktree whose root differs from the working directory.
+    if [[ "$(pwd -P)" != "${_pi_git_work_tree}" ]]; then
+      DOCKER_FLAGS+=(
+        "--volume" "${_pi_git_work_tree}:${_pi_git_work_tree}:ro"
+        "--env" "GIT_WORK_TREE=${_pi_git_work_tree}"
+      )
+    fi
   fi
 fi
-
