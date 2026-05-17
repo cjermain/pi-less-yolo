@@ -1,4 +1,4 @@
-FROM cgr.dev/chainguard/node:latest-dev@sha256:337a0e2860e69cb2ae25e2e5e942e18d08cf72f3470cb9081325e852dff7e237
+FROM cgr.dev/chainguard/node:latest-dev@sha256:c6975adf424afb2cdee11eb723bfc65a91647fee3611785d71c8186a9c75af8e
 
 # openssh-client: ssh binary for git-over-SSH (PI_SSH_AGENT=1) and ssh-add.
 USER root
