@@ -56,6 +56,63 @@ if [[ "${DOCKER_CMD}" == "podman" ]]; then
   DOCKER_FLAGS+=("--userns=keep-id")
 fi
 
+# Extensions: overlay /pi-agent/extensions (nested in the /pi-agent bind
+# mount) with an in-container tmpfs so `npm install` writes node_modules
+# into container memory instead of back to the host. Expose the host copy
+# read-only at /host-extensions (outside /pi-agent so Docker's auto-created
+# mount-point directory doesn't leak back to the host); the entrypoint
+# seeds the tmpfs from there. exec lets node_modules/.bin binaries run;
+# uid/gid make the tmpfs writable by the non-root container user.
+if [[ -d "${HOME}/.pi/agent/extensions" ]]; then
+  DOCKER_FLAGS+=("--volume" "${HOME}/.pi/agent/extensions:/host-extensions:ro")
+fi
+DOCKER_FLAGS+=("--tmpfs" "/pi-agent/extensions:exec,uid=$(id -u),gid=$(id -g)")
+
+# Host-enforced security rules, read from ~/.pi/agent/extensions/security.jsonc
+# before the extension loads. The regex in stripJsonComments below is the
+# "eat string or eat comment" trick: each alternative consumes one token, so
+# // and /* */ inside JSON strings stay intact without a char-by-char walk.
+# Prints one array item per line; empty output on missing file or parse error.
+read_security_config() {
+  local config="${HOME}/.pi/agent/extensions/security.jsonc"
+  [[ -f "${config}" ]] || config="${HOME}/.pi/agent/extensions/security.json"
+  [[ -f "${config}" ]] || return 0
+  node -e '
+    const src = require("fs").readFileSync(process.argv[1], "utf8")
+      .replace(/("(?:[^"\\]|\\.)*")|\/\/[^\n]*|\/\*[\s\S]*?\*\//g, (_, s) => s ?? "");
+    const v = process.argv[2].split(".").reduce((a, k) => a?.[k], JSON.parse(src));
+    if (Array.isArray(v)) for (const s of v) if (typeof s === "string" && s) console.log(s);
+  ' "${config}" "$1" 2>/dev/null
+}
+
+# filesystem.mountMask: bind /dev/null over each listed path (relative to
+# $(pwd)) so the container literally cannot see the file — bash, scripts,
+# and anything else bypass the extension's read/write hooks. Typical use:
+# ".env", ".env.local". Only applied if the host file exists.
+while IFS= read -r rel; do
+  [[ -z "${rel}" ]] && continue
+  [[ -e "$(pwd)/${rel}" ]] && DOCKER_FLAGS+=("--volume" "/dev/null:$(pwd)/${rel}:ro")
+done < <(read_security_config filesystem.mountMask)
+
+# filesystem.isolateDirs: the $(pwd) bind mount would expose host-built
+# dependency dirs (node_modules, .venv, ...) whose native binaries are
+# compiled for the host arch (e.g., macOS) and won't run in the Linux
+# container. Shadow each configured dir with a per-project host overlay
+# under ~/.pi/agent/overlays/<project-hash>/ so the container gets its
+# own (Linux) tree that persists across runs and the host project's tree
+# stays untouched. Configure via filesystem.isolateDirs; missing field =
+# no isolation.
+overlay_root=""
+while IFS= read -r rel; do
+  [[ -z "${rel}" ]] && continue
+  if [[ -z "${overlay_root}" ]]; then
+    project_hash=$(printf '%s' "$(pwd)" | shasum -a 256 | cut -c1-16)
+    overlay_root="${HOME}/.pi/agent/overlays/${project_hash}"
+  fi
+  mkdir -p "${overlay_root}/${rel}"
+  DOCKER_FLAGS+=("--volume" "${overlay_root}/${rel}:$(pwd)/${rel}")
+done < <(read_security_config filesystem.isolateDirs)
+
 # Forward pi-related env vars and API keys if set on the host.
 # Auth file (~/.pi/agent/auth.json) takes priority over these if present.
 PI_ENV_VARS=(
