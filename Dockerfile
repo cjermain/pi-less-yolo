@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 FROM cgr.dev/chainguard/node:latest-dev@sha256:c6975adf424afb2cdee11eb723bfc65a91647fee3611785d71c8186a9c75af8e
 
 # openssh-client: ssh binary for git-over-SSH (PI_SSH_AGENT=1) and ssh-add.
@@ -10,28 +12,25 @@ RUN apk add --no-cache \
         tmux
 
 # Install mise (GPG-verified via mise-release.asc).
-RUN --mount=type=bind,source=mise-release.asc,target=/tmp/mise-release.asc <<'EOF'
-set -e
-apk add --no-cache gpg gpg-agent
-gpg --import /tmp/mise-release.asc
-curl -fsSL https://mise.jdx.dev/install.sh.sig -o /tmp/mise-install.sh.sig
-gpg --decrypt /tmp/mise-install.sh.sig > /tmp/mise-install.sh
-MISE_VERSION=2026.5.15 MISE_INSTALL_PATH=/usr/local/bin/mise sh /tmp/mise-install.sh
-rm /tmp/mise-install.sh.sig /tmp/mise-install.sh
-apk del gpg gpg-agent
-EOF
+RUN --mount=type=bind,source=mise-release.asc,target=/tmp/mise-release.asc \
+set -e \
+&& apk add --no-cache gpg gpg-agent \
+&& gpg --import /tmp/mise-release.asc \
+&& curl -fsSL https://mise.jdx.dev/install.sh.sig -o /tmp/mise-install.sh.sig \
+&& gpg --decrypt /tmp/mise-install.sh.sig > /tmp/mise-install.sh \
+&& MISE_VERSION=2026.5.15 MISE_INSTALL_PATH=/usr/local/bin/mise sh /tmp/mise-install.sh \
+&& rm /tmp/mise-install.sh.sig /tmp/mise-install.sh \
+&& apk del gpg gpg-agent
 
 # ARG (not ENV): available during build, not baked in. At runtime mise defaults
 # to ~/.local/share/mise, which the container user can write to.
 ARG MISE_DATA_DIR=/usr/local/share/mise
 
 # Install uv via mise and expose uv and uvx on PATH.
-RUN <<'EOF'
-set -e
-mise install uv@0.11.16
-ln -s "$(mise exec uv@0.11.16 -- which uv)" /usr/local/bin/uv
-ln -s "$(mise exec uv@0.11.16 -- which uvx)" /usr/local/bin/uvx
-EOF
+RUN set -e \
+&& mise install uv@0.11.8 \
+&& ln -s "$(mise exec uv@0.11.16 -- which uv)" /usr/local/bin/uv \
+&& ln -s "$(mise exec uv@0.11.16 -- which uvx)" /usr/local/bin/uvx
 
 ENV UV_PYTHON_INSTALL_DIR=/usr/local/share/uv/python
 
@@ -65,26 +64,7 @@ RUN mkdir -p /home/piuser /home/piuser/.ssh \
 
 ENV HOME=/home/piuser
 
-# Register the runtime UID in /etc/passwd before starting pi.
-# SSH calls getpwuid(3) and hard-fails without an entry; nss_wrapper is
-# unavailable in Wolfi so we append directly.
-RUN <<'EOF'
-cat > /usr/local/bin/entrypoint.sh << 'ENTRYPOINT'
-#!/bin/sh
-set -e
-
-if ! grep -q "^[^:]*:[^:]*:$(id -u):" /etc/passwd; then
-    printf 'piuser:x:%d:%d:piuser:%s:/bin/sh\n' \
-        "$(id -u)" "$(id -g)" "${HOME}" >> /etc/passwd
-fi
-
-# Pass through to a shell when invoked via `pi:shell`; otherwise run pi.
-case "${1:-}" in
-    bash|sh) exec "$@" ;;
-    *) exec pi "$@" ;;
-esac
-ENTRYPOINT
-chmod +x /usr/local/bin/entrypoint.sh
-EOF
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
