@@ -28,9 +28,9 @@ ARG MISE_DATA_DIR=/usr/local/share/mise
 # Install uv via mise and expose uv and uvx on PATH.
 RUN <<'EOF'
 set -e
-mise install uv@0.11.16
-ln -s "$(mise exec uv@0.11.16 -- which uv)" /usr/local/bin/uv
-ln -s "$(mise exec uv@0.11.16 -- which uvx)" /usr/local/bin/uvx
+mise install uv@0.11.28
+ln -s "$(mise exec uv@0.11.28 -- which uv)" /usr/local/bin/uv
+ln -s "$(mise exec uv@0.11.28 -- which uvx)" /usr/local/bin/uvx
 EOF
 
 ENV UV_PYTHON_INSTALL_DIR=/usr/local/share/uv/python
