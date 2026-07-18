@@ -3,6 +3,7 @@
   "extends": ["config:recommended"],
   "github-actions": { "enabled": false },
   "minimumReleaseAge": "3 days",
+  "labels": ["dependencies", "renovate"],
   "packageRules": [
     {
       "matchCategories": ["docker"],
