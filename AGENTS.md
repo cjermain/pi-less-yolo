@@ -85,6 +85,7 @@ mise run ci      # lint + docker build + smoke test
   | `PI_CPUS` | Set `--cpus` |
   | `PI_PIDS_LIMIT` | Set `--pids-limit` |
   | `PI_CONTAINER_RUNTIME` | Override container runtime (e.g. `podman`); skips auto-detection |
+  | `PI_EXTRA_MOUNTS` | `;`-separated `source:target[:mode]` volume mounts; mode defaults to `rw`; malformed entries and missing sources both warn to stderr and are skipped, never fail the task |
 - Use `perl -pi -e` for in-place file edits (cross-platform; avoids `sed -i` / `sed -i ''` incompatibility between Linux and macOS).
 
 ## Automated dependency updates
@@ -111,11 +112,13 @@ Both `Dockerfile` and `README.md` must be updated together when pi's version cha
 
 ## GitHub Actions
 
-`.github/workflows/ci.yml` triggers on push and pull requests to `main`. It has two independent jobs:
+`.github/workflows/ci.yml` triggers on push and pull requests to `main`. It has four jobs:
 
-| Job | Steps |
-|---|---|
-| `lint` | Checkout → mise-action → `mise run lint` |
-| `build` | Checkout → Docker Buildx → build image (GHA cache) → smoke test `--version` → smoke test `python3 --version` |
+| Job | Depends on | Steps |
+|---|---|---|
+| `lint` | — | Checkout → mise-action → `mise run lint` |
+| `build` | — | Checkout → Docker Buildx → build image, exported to `image.tar` (GHA cache) → upload as artifact |
+| `test` | `build` | Checkout → mise-action → download + `docker load` the image → `mise run test` |
+| `test-podman` | `build` | Checkout → mise-action → download + `podman load` the image → `PI_CONTAINER_RUNTIME=podman mise run test` |
 
-The build job uses `docker/build-push-action` with `push: false` and `load: true` so the built image is available for the smoke tests without being pushed to a registry.
+The build job uses `docker/build-push-action` with `push: false` and `outputs: type=docker` so the built image can be uploaded as an artifact and reused by both test jobs without a registry.

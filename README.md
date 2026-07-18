@@ -298,6 +298,24 @@ Or export it in your shell profile to make it permanent.
 > `host.docker.internal` as the `baseUrl` in `models.json` instead — Docker
 > Desktop routes that hostname to the Mac host correctly.
 
+### Extra mounts
+
+Set `PI_EXTRA_MOUNTS` to mount additional host directories into the container —
+for example an LLM wiki, shared agent config, or SSH keys — without editing
+`DOCKER_FLAGS` directly:
+
+```bash
+export PI_EXTRA_MOUNTS="$HOME/.llm-wiki:/home/piuser/.llm-wiki;$HOME/.agents:/home/piuser/.agents:ro"
+```
+
+Format: `source:target[:mode]`, entries separated by `;`. `mode` is `rw` (default) or
+`ro`. Malformed entries and sources that don't exist on the host both print a warning
+and are skipped — they don't stop pi from starting.
+
+> **Security note:** the default mode is `rw`, so the agent can write to any mounted
+> directory unless you add `:ro`. Only mount directories you're comfortable with the
+> agent modifying.
+
 ### Resource limits
 
 By default no memory, CPU, or process-count limits are applied. Set any of these

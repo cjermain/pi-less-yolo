@@ -115,19 +115,23 @@ if [[ -n "${PI_EXTRA_MOUNTS:-}" ]]; then
   _pi_ifs="$IFS"
   IFS=';'
   for _pi_spec in ${PI_EXTRA_MOUNTS}; do
-    _pi_src="${_pi_spec%%:*}"
-    _pi_rest="${_pi_spec#*:}"
-    _pi_tgt="${_pi_rest%%:*}"
-    _pi_mode="${_pi_rest#*:}"
-    [[ "${_pi_mode}" == "${_pi_rest}" ]] && _pi_mode="rw"
-    if [[ -e "${_pi_src}" ]]; then
-      DOCKER_FLAGS+=("--volume" "${_pi_src}:${_pi_tgt}:${_pi_mode}")
+    [[ -z "${_pi_spec}" ]] && continue  # tolerate stray/trailing ';'
+
+    if [[ "${_pi_spec}" =~ ^([^:]+):([^:]+)(:(rw|ro))?$ ]]; then
+      _pi_src="${BASH_REMATCH[1]}"
+      _pi_tgt="${BASH_REMATCH[2]}"
+      _pi_mode="${BASH_REMATCH[4]:-rw}"
+      if [[ -e "${_pi_src}" ]]; then
+        DOCKER_FLAGS+=("--volume" "${_pi_src}:${_pi_tgt}:${_pi_mode}")
+      else
+        echo "warning: PI_EXTRA_MOUNTS source '${_pi_src}' not found — skipping mount" >&2
+      fi
     else
-      echo "warning: PI_EXTRA_MOUNTS source '${_pi_src}' not found — skipping mount" >&2
+      echo "warning: PI_EXTRA_MOUNTS entry '${_pi_spec}' is malformed (expected source:target[:rw|ro]) — skipping" >&2
     fi
   done
   IFS="$_pi_ifs"
-  unset _pi_ifs _pi_spec _pi_src _pi_rest _pi_tgt _pi_mode
+  unset _pi_ifs _pi_spec _pi_src _pi_tgt _pi_mode
 fi
 
 # SSH agent forwarding. Opt in by setting PI_SSH_AGENT=1.
