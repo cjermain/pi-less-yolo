@@ -9,8 +9,8 @@ RUN apk add --no-cache \
         openssh-client \
         tmux
 
-# Install mise (GPG-verified via mise-release.asc).
-RUN --mount=type=bind,source=mise-release.asc,target=/tmp/mise-release.asc <<'EOF'
+# Install mise (GPG-verified via mise-release.asc; secret mount avoids a rootless-Podman/SELinux AVC denial, #99).
+RUN --mount=type=secret,id=mise_asc,target=/tmp/mise-release.asc,required=true <<'EOF'
 set -e
 apk add --no-cache gpg gpg-agent
 gpg --import /tmp/mise-release.asc

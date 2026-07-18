@@ -38,6 +38,8 @@ jobs:
           tags: pi-less-yolo:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          secret-files: |
+            mise_asc=./mise-release.asc
 
       - name: Upload image
         uses: actions/upload-artifact@v7
