@@ -17,6 +17,7 @@ BUILD_FLAGS=()
 [[ "$(uname -s)" == "Linux" ]] && BUILD_FLAGS+=("--network=host")
 
 "${DOCKER_CMD}" build "${BUILD_FLAGS[@]}" \
+  --secret "id=mise_asc,src=${REPO_ROOT}/mise-release.asc" \
   -f "${REPO_ROOT}/Dockerfile" \
   -t "pi-less-yolo:latest" \
   "${REPO_ROOT}"

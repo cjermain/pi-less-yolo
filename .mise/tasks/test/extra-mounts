@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+#MISE description="Smoke test that PI_EXTRA_MOUNTS mounts host directories with the requested mode, and warns without failing on missing sources or malformed entries"
+set -euo pipefail
+
+src_rw=$(mktemp -d)
+src_ro=$(mktemp -d)
+trap 'rm -rf "$src_rw" "$src_ro"' EXIT
+
+# Default mode (no ":mode" suffix) is rw: a write inside the container must reach the host.
+_inner_rw='
+  echo hello > /extra-rw/marker && echo OK || echo FAIL
+'
+# shellcheck disable=SC2016  # $1 is a positional parameter in the child bash -c, not the current shell
+result_rw=$(
+  PI_EXTRA_MOUNTS="${src_rw}:/extra-rw" bash -c '
+    source tasks/pi/_docker_flags
+    "${DOCKER_CMD}" run "${DOCKER_FLAGS[@]}" pi-less-yolo:latest bash -c "$1"
+  ' -- "$_inner_rw"
+)
+[ "$result_rw" = "OK" ] && [ -f "${src_rw}/marker" ] || { echo "FAIL: rw mount is not writable or not visible on host"; exit 1; }
+echo "  OK default mode is rw and writes reach the host"
+
+# Explicit :ro mode: a write inside the container must fail.
+_inner_ro='
+  touch /extra-ro/marker && echo WRITABLE || echo READONLY
+'
+# shellcheck disable=SC2016  # $1 is a positional parameter in the child bash -c, not the current shell
+result_ro=$(
+  PI_EXTRA_MOUNTS="${src_ro}:/extra-ro:ro" bash -c '
+    source tasks/pi/_docker_flags
+    "${DOCKER_CMD}" run "${DOCKER_FLAGS[@]}" pi-less-yolo:latest bash -c "$1"
+  ' -- "$_inner_ro"
+)
+[ "$result_ro" = "READONLY" ] || { echo "FAIL: :ro mount is writable"; exit 1; }
+echo "  OK :ro mount is read-only"
+
+# Missing source directory: warns and is skipped, task still succeeds (no container run needed).
+warning=$(
+  PI_EXTRA_MOUNTS="/nonexistent-path-for-pi-test:/extra" bash -c '
+    source tasks/pi/_docker_flags
+  ' 2>&1 >/dev/null
+)
+[[ "$warning" == *"not found"* ]] || { echo "FAIL: missing source did not warn"; exit 1; }
+echo "  OK missing source warns and is skipped"
+
+# Malformed entry (no ":target"): warns and is skipped, task still succeeds.
+warning=$(
+  PI_EXTRA_MOUNTS="onlysource" bash -c '
+    source tasks/pi/_docker_flags
+  ' 2>&1 >/dev/null
+)
+[[ "$warning" == *"malformed"* ]] || { echo "FAIL: malformed entry did not warn"; exit 1; }
+echo "  OK malformed entry warns and is skipped"

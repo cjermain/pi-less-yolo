@@ -11,7 +11,7 @@ Dockerfile, and a CI smoke test.
 
 | Path | Role |
 |---|---|
-| `Dockerfile` | Single-stage Chainguard node image; installs curl, git, tmux, mise, uv, Python, and pi. Entrypoint synthesises a `/etc/passwd` entry for the runtime UID so tools like SSH can resolve the user. |
+| `Dockerfile` | Single-stage Chainguard node image; installs curl, git, tmux, mise, uv, Python, and pi. `mise-release.asc` is passed in as a build secret (not a bind mount). Entrypoint synthesises a `/etc/passwd` entry for the runtime UID so tools like SSH can resolve the user. |
 | `tasks/pi/_docker_flags` | Sourced (not executed) by all pi tasks; defines `DOCKER_FLAGS` (security options, volume mounts, env-var forwarding); detects podman and adds `--userns=keep-id` when needed |
 | `tasks/pi/_default` | `mise run pi` — launches the agent in the container |
 | `tasks/pi/readonly` | `mise run pi:readonly` — launches the agent with the project directory mounted read-only and file-modification tools disabled |
@@ -85,7 +85,9 @@ mise run ci      # lint + docker build + smoke test
   | `PI_CPUS` | Set `--cpus` |
   | `PI_PIDS_LIMIT` | Set `--pids-limit` |
   | `PI_CONTAINER_RUNTIME` | Override container runtime (e.g. `podman`); skips auto-detection |
+  | `PI_EXTRA_MOUNTS` | `;`-separated `source:target[:mode]` volume mounts; mode defaults to `rw`; malformed entries and missing sources both warn to stderr and are skipped, never fail the task |
 - Use `perl -pi -e` for in-place file edits (cross-platform; avoids `sed -i` / `sed -i ''` incompatibility between Linux and macOS).
+- `mise-release.asc` is mounted as a build secret (`--mount=type=secret`), not a bind mount — rootless Podman + SELinux denies `gpg` read access to bind-mounted context files (issue #99).
 
 ## Automated dependency updates
 
@@ -111,11 +113,13 @@ Both `Dockerfile` and `README.md` must be updated together when pi's version cha
 
 ## GitHub Actions
 
-`.github/workflows/ci.yml` triggers on push and pull requests to `main`. It has two independent jobs:
+`.github/workflows/ci.yml` triggers on push and pull requests to `main`. It has four jobs:
 
-| Job | Steps |
-|---|---|
-| `lint` | Checkout → mise-action → `mise run lint` |
-| `build` | Checkout → Docker Buildx → build image (GHA cache) → smoke test `--version` → smoke test `python3 --version` |
+| Job | Depends on | Steps |
+|---|---|---|
+| `lint` | — | Checkout → mise-action → `mise run lint` |
+| `build` | — | Checkout → Docker Buildx → build image, exported to `image.tar` (GHA cache) → upload as artifact |
+| `test` | `build` | Checkout → mise-action → download + `docker load` the image → `mise run test` |
+| `test-podman` | `build` | Checkout → mise-action → download + `podman load` the image → `PI_CONTAINER_RUNTIME=podman mise run test` |
 
-The build job uses `docker/build-push-action` with `push: false` and `load: true` so the built image is available for the smoke tests without being pushed to a registry.
+The build job uses `docker/build-push-action` with `push: false` and `outputs: type=docker` so the built image can be uploaded as an artifact and reused by both test jobs without a registry.

@@ -1,7 +1,7 @@
 # pi-less-yolo
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![pi version](https://img.shields.io/badge/pi--coding--agent-0.78.0-blueviolet)](https://github.com/earendil-works/pi/tree/main/packages/coding-agent)
+[![pi version](https://img.shields.io/badge/pi--coding--agent-0.80.10-blueviolet)](https://github.com/earendil-works/pi/tree/main/packages/coding-agent)
 [![Base Image](https://img.shields.io/badge/base%20image-chainguard%2Fnode-F4835E?logo=docker)](https://images.chainguard.dev/directory/image/node/overview)
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-brightgreen?logo=dependabot)](https://github.com/cjermain/pi-less-yolo/blob/main/.github/dependabot.yml)
 [![mise](https://mise-versions.jdx.dev/badge.svg)](https://mise.jdx.dev)
@@ -297,6 +297,24 @@ Or export it in your shell profile to make it permanent.
 > not the Mac's. Localhost services on macOS are not reachable this way. Use
 > `host.docker.internal` as the `baseUrl` in `models.json` instead — Docker
 > Desktop routes that hostname to the Mac host correctly.
+
+### Extra mounts
+
+Set `PI_EXTRA_MOUNTS` to mount additional host directories into the container —
+for example an LLM wiki, shared agent config, or SSH keys — without editing
+`DOCKER_FLAGS` directly:
+
+```bash
+export PI_EXTRA_MOUNTS="$HOME/.llm-wiki:/home/piuser/.llm-wiki;$HOME/.agents:/home/piuser/.agents:ro"
+```
+
+Format: `source:target[:mode]`, entries separated by `;`. `mode` is `rw` (default) or
+`ro`. Malformed entries and sources that don't exist on the host both print a warning
+and are skipped — they don't stop pi from starting.
+
+> **Security note:** the default mode is `rw`, so the agent can write to any mounted
+> directory unless you add `:ro`. Only mount directories you're comfortable with the
+> agent modifying.
 
 ### Resource limits
 
