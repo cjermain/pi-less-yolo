@@ -39,7 +39,7 @@ RUN uv python install 3.14.4 \
     && ln -s "$(uv python find 3.14.4)" /usr/local/bin/python3
 
 # Install pi globally
-RUN npm install -g "@earendil-works/pi-coding-agent@0.80.10"
+RUN npm install -g "@earendil-works/pi-coding-agent@0.82.0"
 
 # Prepend extension binaries (host-mounted via /pi-agent). Security: binaries
 # here can shadow any command; no privilege escalation (--cap-drop=ALL,
