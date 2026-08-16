@@ -55,7 +55,7 @@ jobs:
 
       # Podman has no gha cache-from/cache-to integration, so cache its storage dir directly.
       - name: Cache Podman storage
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.local/share/containers/storage
           key: podman-storage-${{ runner.os }}-${{ hashFiles('Dockerfile') }}
