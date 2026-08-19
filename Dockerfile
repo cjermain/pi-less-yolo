@@ -35,8 +35,8 @@ RUN set -e \
 ENV UV_PYTHON_INSTALL_DIR=/usr/local/share/uv/python
 
 # Install Python via uv and expose it on PATH
-RUN uv python install 3.14.4 \
-    && ln -s "$(uv python find 3.14.4)" /usr/local/bin/python3
+RUN uv python install 3.14.7 \
+    && ln -s "$(uv python find 3.14.7)" /usr/local/bin/python3
 
 # Install pi globally
 RUN npm install -g "@earendil-works/pi-coding-agent@0.84.2"
