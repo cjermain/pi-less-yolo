@@ -18,7 +18,7 @@ set -e \
 && gpg --import /tmp/mise-release.asc \
 && curl -fsSL https://mise.jdx.dev/install.sh.sig -o /tmp/mise-install.sh.sig \
 && gpg --decrypt /tmp/mise-install.sh.sig > /tmp/mise-install.sh \
-&& MISE_VERSION=2026.8.8 MISE_INSTALL_PATH=/usr/local/bin/mise sh /tmp/mise-install.sh \
+&& MISE_VERSION=2026.8.12 MISE_INSTALL_PATH=/usr/local/bin/mise sh /tmp/mise-install.sh \
 && rm /tmp/mise-install.sh.sig /tmp/mise-install.sh \
 && apk del gpg gpg-agent
 
