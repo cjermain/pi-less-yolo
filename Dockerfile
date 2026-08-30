@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM cgr.dev/chainguard/node:latest-dev@sha256:5f539ca9ce7ed8b858059b3316640232bcb1ae7d3513ae67bb95527533bf1fba
+FROM cgr.dev/chainguard/node:latest-dev@sha256:4cd2bedce5955f933c8dca76df9bdff301505f3d0994c1e7e829a01e1718e650
 
 # openssh-client: ssh binary for git-over-SSH (PI_SSH_AGENT=1) and ssh-add.
 USER root
