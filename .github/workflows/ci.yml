@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: jdx/mise-action@v4.2.5
+      - uses: jdx/mise-action@v4.3.0
 
       - name: Lint
         run: mise run lint
@@ -81,7 +81,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: jdx/mise-action@v4.2.5
+      - uses: jdx/mise-action@v4.3.0
 
       - name: Download image
         uses: actions/download-artifact@v8
@@ -100,7 +100,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: jdx/mise-action@v4.2.5
+      - uses: jdx/mise-action@v4.3.0
 
       - name: Download image
         uses: actions/download-artifact@v8
