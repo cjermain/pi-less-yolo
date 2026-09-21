@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Smoke test that vim is installed and EDITOR points to it"
+set -euo pipefail
+
+DOCKER_CMD="${PI_CONTAINER_RUNTIME:-docker}"
+"${DOCKER_CMD}" run --rm pi-less-yolo:latest bash -c \
+  'vim --version > /dev/null && test "${EDITOR}" = vim && test "${VISUAL}" = vim'
