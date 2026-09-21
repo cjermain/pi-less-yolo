@@ -9,7 +9,8 @@ RUN apk add --no-cache \
         ca-certificates \
         git \
         openssh-client \
-        tmux
+        tmux \
+        vim
 
 # Install mise (GPG-verified via mise-release.asc; secret mount avoids a rootless-Podman/SELinux AVC denial, #99).
 RUN --mount=type=secret,id=mise_asc,target=/tmp/mise-release.asc,required=true \
@@ -39,7 +40,7 @@ RUN uv python install 3.14.7 \
     && ln -s "$(uv python find 3.14.7)" /usr/local/bin/python3
 
 # Install pi globally
-RUN npm install -g "@earendil-works/pi-coding-agent@0.85.1"
+RUN npm install -g "@earendil-works/pi-coding-agent@0.87.0"
 
 # Prepend extension binaries (host-mounted via /pi-agent). Security: binaries
 # here can shadow any command; no privilege escalation (--cap-drop=ALL,
@@ -63,6 +64,10 @@ RUN mkdir -p /home/piuser /home/piuser/.ssh \
     && echo "prefix=/pi-agent/npm-global" > /home/piuser/.npmrc
 
 ENV HOME=/home/piuser
+
+# Set vim as the default editor for pi and other tools that honour $EDITOR.
+ENV EDITOR=vim \
+    VISUAL=vim
 
 COPY --chmod=755 entrypoint.sh /usr/local/bin/entrypoint.sh
 
