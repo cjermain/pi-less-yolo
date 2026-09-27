@@ -11,8 +11,8 @@ Dockerfile, and a CI smoke test.
 
 | Path | Role |
 |---|---|
-| `Dockerfile` | Single-stage Chainguard node image; installs curl, git, tmux, mise, uv, Python, and pi. `mise-release.asc` is passed in as a build secret (not a bind mount). Entrypoint synthesises a `/etc/passwd` entry for the runtime UID so tools like SSH can resolve the user. |
-| `tasks/pi/_docker_flags` | Sourced (not executed) by all pi tasks; defines `DOCKER_FLAGS` (security options, volume mounts, env-var forwarding); detects podman and adds `--userns=keep-id` when needed |
+| `Dockerfile` | Single-stage Chainguard node image; installs curl, docker-cli, git, tmux, mise, uv, Python, and pi. `mise-release.asc` is passed in as a build secret (not a bind mount). Entrypoint synthesises a `/etc/passwd` entry for the runtime UID so tools like SSH can resolve the user. |
+| `tasks/pi/_docker_flags` | Sourced (not executed) by all pi tasks; defines `DOCKER_FLAGS` (security options, volume mounts, env-var forwarding); mounts the host container-runtime socket unless `PI_NO_DOCKER=1` or read-only mode; detects podman and adds `--userns=keep-id` when needed |
 | `tasks/pi/_default` | `mise run pi` — launches the agent in the container |
 | `tasks/pi/readonly` | `mise run pi:readonly` — launches the agent with the project directory mounted read-only and file-modification tools disabled |
 | `tasks/pi/build` | `mise run pi:build` — builds the Docker image |
@@ -34,9 +34,12 @@ Dockerfile, and a CI smoke test.
 
 ## Development workflow
 
-The Docker socket is intentionally absent from the container — mounting it
-would grant full host filesystem access via a trivial container escape, defeating
-the entire security model.
+The container mounts the host container-runtime socket and ships the Docker CLI
+(`docker-cli`) so pi can build and run containers. This is equivalent to host
+root: a container with socket access can start a privileged container with the
+host filesystem mounted. It is enabled by default and can be disabled per-run
+with `PI_NO_DOCKER=1`; `pi:readonly` never mounts it. Do not assume the
+filesystem mount list is the full blast radius.
 
 From within a `mise run pi` session, run `mise run lint` to validate scripts
 and the Dockerfile. For anything that requires Docker (`mise run ci`,
@@ -70,6 +73,7 @@ mise run ci      # lint + docker build + smoke test
 - `tasks/pi/_docker_flags` is *sourced*, not executed — no shebang, not executable.
 - `#MISE raw=true` and `#MISE dir="{{cwd}}"` on `_default` and `shell` are intentional: they preserve raw terminal I/O and ensure the container's working directory matches the caller's. Do not remove them.
 - Docker security flags (`--cap-drop=ALL`, `--security-opt=no-new-privileges`, `--user $(id -u):$(id -g)`) are non-negotiable. Do not weaken them.
+- The host runtime socket is mounted by default (`_PI_DOCKER_SOCK` in `_docker_flags`; `PI_NO_DOCKER=1` opts out, `pi:readonly` always skips it). The socket's GID is looked up with `ls -nLd` and passed via `--group-add`; `DOCKER_HOST` is pinned to the in-container socket path. Treat this as host-root access when reasoning about safety.
 - **Podman support:** `tasks/pi/_docker_flags` detects podman via `docker --version` output (version string) and binary path (`readlink -f`); adds `--userns=keep-id` to fix TTY ownership errors. Shell aliases are not visible in non-interactive scripts; users need the `podman-docker` package, a symlink, or `PI_CONTAINER_RUNTIME=podman`.
 - `--network=host` appears in `pi:build` on Linux (DNS workaround) and in runtime `DOCKER_FLAGS` when `PI_LOCAL_MODELS=1` is set. It must not appear unconditionally in runtime `DOCKER_FLAGS`.
 - When adding a new provider API key: add it to the `PI_ENV_VARS` array in `tasks/pi/_docker_flags` **and** the auth table in `README.md`.
@@ -78,7 +82,8 @@ mise run ci      # lint + docker build + smoke test
   | Variable | Effect |
   |---|---|
   | `PI_NO_GITCONFIG=1` | Suppress `~/.gitconfig` read-only mount |
-  | `PI_NO_CONTAINER_PROMPT=1` | Suppress the container-context `--append-system-prompt` (no Docker socket, sudo, or root) |
+  | `PI_NO_DOCKER=1` | Do not mount the host container-runtime socket (restores the socket-less sandbox; also updates the container-context prompt) |
+  | `PI_NO_CONTAINER_PROMPT=1` | Suppress the container-context `--append-system-prompt` (sudo and package installation unavailable; Docker availability depends on `PI_NO_DOCKER`) |
   | `PI_SSH_AGENT=1` | Forward SSH agent socket; also mounts `~/.ssh/known_hosts` and `~/.ssh/config` read-only |
   | `PI_LOCAL_MODELS=1` | Add `--network=host` so local model servers are reachable at `localhost`; on macOS Docker Desktop use `host.docker.internal` instead |
   | `PI_MEMORY` | Set `--memory` (e.g. `4g`) |

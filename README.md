@@ -11,9 +11,9 @@
 
 ![pi-less-yolo demo: filesystem isolation proof and AI-assisted bug fix](docs/demo.gif)
 
-A [mise](https://mise.jdx.dev) shim that wraps the **pi** AI coding agent in a [Chainguard](https://chainguard.dev)-based container with your current directory and `~/.pi/agent` volume-mounted — and nothing else.
+A [mise](https://mise.jdx.dev) shim that wraps the **pi** AI coding agent in a [Chainguard](https://chainguard.dev)-based container with your current directory and `~/.pi/agent` volume-mounted. The host container-runtime socket is also mounted by default so the agent can drive Docker (see [Docker access](#docker-access-host-daemon)); disable it with `PI_NO_DOCKER=1`.
 
-Pi defaults to running with full access to your filesystem. This repo constrains it so the agent cannot touch files outside your project, cannot escalate privileges, and runs as your own user.
+Pi defaults to running with full access to your filesystem. This repo constrains it so the agent cannot touch files outside your project, cannot escalate privileges inside the container, and runs as your own user. The one deliberate exception is the host container-runtime socket — see [Docker access](#docker-access-host-daemon).
 
 > **This is "less YOLO", not "no YOLO".** Container escapes exist. The mounted directories are fully writable. This is a meaningful reduction in risk, not a security guarantee.
 
@@ -22,7 +22,8 @@ Pi defaults to running with full access to your filesystem. This repo constrains
 AI coding agents are powerful — and dangerous. A hallucinating model, a misunderstood instruction, or a runaway loop can delete, overwrite, or exfiltrate files anywhere on your machine. `pi-less-yolo` gives you a practical safety net:
 
 - **Filesystem isolation** — the agent can only read and write your current project directory.
-- **No privilege escalation** — all Linux capabilities are dropped; `no-new-privileges` is set.
+- **No in-container privilege escalation** — all Linux capabilities are dropped; `no-new-privileges` is set.
+- **Docker access** — the Docker CLI is installed and the host runtime socket is mounted so the agent can build and run containers. Opt out with `PI_NO_DOCKER=1`.
 - **Reproducible environment** — a pinned, minimal Chainguard Node image with only the tools pi needs.
 - **Zero friction** — one `mise run pi` command from any project; no manual Docker incantations.
 
@@ -209,10 +210,25 @@ The container is launched with:
 - `--ipc=none` — isolated IPC namespace; no shared memory with other containers
 - `--volume $(pwd):$(pwd)` — your current directory is mounted at its real host path; the container's working directory is set to match
 - `--volume ~/.pi/agent:/pi-agent` — pi config, credentials, and sessions
+- `--volume <runtime socket>:/var/run/docker.sock` — host container-runtime socket, so the Docker CLI inside the container drives the host daemon (default; disable with `PI_NO_DOCKER=1`)
 
 Mounting the directory at its real path (rather than a fixed `/workspace`) means pi's session tracking reflects the actual project path, so each project gets distinct session history.
 
-The agent cannot reach other directories on your host. It can make arbitrary network requests and execute any command available inside the container image.
+The agent cannot reach other directories on your host through the filesystem. It can make arbitrary network requests and execute any command available inside the container image.
+
+### Docker access (host daemon)
+
+The image ships the Docker CLI, and the host container-runtime socket (`/var/run/docker.sock`, or `$DOCKER_HOST` when set) is mounted by default so the agent can build and run containers — useful for projects using Docker Compose, testcontainers, or image builds. Socket symlinks are resolved before mounting: for example, OrbStack's `/var/run/docker.sock` resolves to `~/.orbstack/run/docker.sock`. The container keeps your host UID:GID, allowing access to your user-owned socket without running as root. The socket's group is also added as a supplementary group for sockets owned by another user.
+
+> **Security note:** access to the daemon socket is equivalent to root on the host. A container with socket access can start a privileged container with the host filesystem mounted (`docker run -v /:/host --privileged`), so `--cap-drop=ALL` and `--no-new-privileges` offer no protection against this. Only the mounted project directory and `~/.pi/agent` are shared as files; everything else on the host is reachable indirectly through the daemon.
+
+Disable Docker access with `PI_NO_DOCKER=1`:
+
+```bash
+PI_NO_DOCKER=1 mise run pi
+```
+
+`mise run pi:readonly` never mounts the socket: read-only mode exists to contain untrusted code, and a host daemon socket would void that guarantee.
 
 ### Read-only mode
 
@@ -238,7 +254,7 @@ If `~/.gitconfig` exists on the host it is mounted read-only at startup, so the 
 
 ### Container context prompt
 
-By default pi is told it is running inside a Docker container as a non-root user, and that the Docker socket, sudo, and system package installation are unavailable. This prevents the agent from confidently suggesting commands that will fail. Opt out by setting `PI_NO_CONTAINER_PROMPT=1`.
+By default pi is told it is running inside a Docker container as a non-root user, and that sudo and system package installation are unavailable. When the runtime socket is mounted (the default) it is also told the Docker CLI is available; with `PI_NO_DOCKER=1` it is told the socket is unavailable instead. `PI_NO_CONTAINER_PROMPT=1` suppresses the prompt entirely.
 
 ### SSH agent forwarding
 
@@ -351,7 +367,10 @@ Podman is automatically detected when the `docker` command in PATH resolves to t
 podman binary — either via a compatibility wrapper or a symlink.
 
 The runtime adds `--userns=keep-id` when podman is detected, which properly maps user
-namespaces and avoids TTY ownership errors.
+namespaces and avoids TTY ownership errors. The bundled Docker CLI reaches podman
+through the host podman socket (`$XDG_RUNTIME_DIR/podman/podman.sock`, falling back
+to `/run/podman/podman.sock`), so run `podman system service` if it is not already
+listening.
 
 Set `PI_CONTAINER_RUNTIME=podman` to use podman explicitly without relying on detection:
 

@@ -1,3 +1,5 @@
+# ABOUTME: Builds shared container flags for pi tasks running as the host user.
+# ABOUTME: Configures mounts, runtime socket access, and environment forwarding.
 # Builds DOCKER_FLAGS for pi container tasks. Source this file; do not execute directly.
 # Usage: source "$(dirname "$0")/_docker_flags"
 
@@ -54,6 +56,55 @@ DOCKER_FLAGS=(
 # and avoid "crun: chown `/dev/pts/0`: Invalid argument" errors.
 if [[ "${DOCKER_CMD}" == "podman" ]]; then
   DOCKER_FLAGS+=("--userns=keep-id")
+fi
+
+# Docker CLI (docker-outside-of-docker): the image ships the docker client and
+# this mounts the host runtime socket so pi can build and run containers.
+# Disable with PI_NO_DOCKER=1. Skipped in read-only mode, whose purpose is to
+# contain untrusted code — a host daemon socket would void that guarantee.
+#
+# Security: the daemon socket is equivalent to root on the host (e.g.
+# `docker run -v /:/host --privileged`). --cap-drop=ALL and
+# --no-new-privileges do not constrain the daemon. Opting back into the
+# sandbox is possible with PI_NO_DOCKER=1.
+if [[ -z "${PI_NO_DOCKER:-}" && -z "${_PI_WORKDIR_RO:-}" ]]; then
+  if [[ -n "${DOCKER_HOST:-}" ]]; then
+    _PI_DOCKER_SOCK="${DOCKER_HOST#unix://}"
+  elif [[ "${DOCKER_CMD}" == "podman" ]]; then
+    # Rootless podman uses $XDG_RUNTIME_DIR/podman/podman.sock; rootful uses
+    # /run/podman/podman.sock.
+    _PI_DOCKER_SOCK=""
+    for _pi_candidate in "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock" /run/podman/podman.sock; do
+      if [[ -S "${_pi_candidate}" ]]; then
+        _PI_DOCKER_SOCK="${_pi_candidate}"
+        break
+      fi
+    done
+    _PI_DOCKER_SOCK="${_PI_DOCKER_SOCK:-/run/podman/podman.sock}"
+    unset _pi_candidate
+  else
+    _PI_DOCKER_SOCK="/var/run/docker.sock"
+  fi
+
+  if [[ -S "${_PI_DOCKER_SOCK}" ]]; then
+    # Resolve host symlinks before the daemon interprets the bind source.
+    # OrbStack's /var/run/docker.sock points to a socket owned by the host user.
+    _PI_DOCKER_SOCK="$(readlink -f "${_PI_DOCKER_SOCK}")"
+    # The socket owner may differ from the container user (Linux: root:docker;
+    # Docker Desktop: root:root), so add its GID as a supplementary group.
+    # `ls -nLd` is the portable way to get a numeric GID on GNU and BSD stat.
+    # shellcheck disable=SC2012  # Numeric GID is field 4 regardless of the socket filename.
+    _pi_docker_gid="$(ls -nLd "${_PI_DOCKER_SOCK}" 2>/dev/null | awk '{print $4}')"
+    DOCKER_FLAGS+=(
+      "--volume" "${_PI_DOCKER_SOCK}:/var/run/docker.sock"
+      "--env" "DOCKER_HOST=unix:///var/run/docker.sock"
+    )
+    [[ -n "${_pi_docker_gid}" ]] && DOCKER_FLAGS+=("--group-add" "${_pi_docker_gid}")
+  else
+    echo "warning: container runtime socket '${_PI_DOCKER_SOCK}' not found — docker inside pi cannot reach the daemon" >&2
+    _PI_DOCKER_SOCK=""
+  fi
+  unset _pi_docker_gid
 fi
 
 # Forward pi-related env vars and API keys if set on the host.

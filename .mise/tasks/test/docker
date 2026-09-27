@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# ABOUTME: Verifies Docker CLI access to the host daemon as the calling user.
+# ABOUTME: Exercises socket symlink mounts through the real container runtime.
+#MISE description="Smoke test that the docker CLI is installed and reaches the host daemon through the mounted socket"
+set -euo pipefail
+
+DOCKER_CMD="${PI_CONTAINER_RUNTIME:-docker}"
+
+# CLI check: needs no daemon or socket.
+"${DOCKER_CMD}" run --rm pi-less-yolo:latest bash -c 'docker --version'
+
+# A chained relative symlink must mount the real socket, not the host alias.
+(
+  # shellcheck source=tasks/pi/_docker_flags
+  source tasks/pi/_docker_flags
+  if [[ -z "${_PI_DOCKER_SOCK:-}" ]]; then
+    echo "  SKIP no host runtime socket found — symlink mounting not tested"
+    exit 0
+  fi
+  socket_path=$(readlink -f "${_PI_DOCKER_SOCK}")
+  socket_dir=$(mktemp -d)
+  trap 'rm -rf "$socket_dir"' EXIT
+  ln -s "${socket_path}" "${socket_dir}/target.sock"
+  ln -s target.sock "${socket_dir}/docker.sock"
+
+  export DOCKER_HOST="unix://${socket_dir}/docker.sock"
+  # shellcheck source=tasks/pi/_docker_flags
+  source tasks/pi/_docker_flags
+  found_mount=false
+  for flag in "${DOCKER_FLAGS[@]}"; do
+    if [[ "${flag}" == "${socket_path}:/var/run/docker.sock" ]]; then
+      found_mount=true
+    fi
+  done
+  "${found_mount}" || { echo "FAIL: socket symlink was not resolved before mounting"; exit 1; }
+  echo "  OK socket symlink resolves to the real mount source"
+
+  # shellcheck disable=SC2016  # UID:GID and positional parameters expand inside the container.
+  "${DOCKER_CMD}" run "${DOCKER_FLAGS[@]}" pi-less-yolo:latest bash -c '
+    [[ "$(id -u):$(id -g)" == "$1" ]] && docker version --format "{{.Server.Version}}" > /dev/null
+  ' -- "$(id -u):$(id -g)"
+  echo "  OK Docker reaches the daemon with the host UID:GID through a socket symlink"
+)
+
+# Daemon check: _docker_flags mounts the host runtime socket. Skip when the
+# host has no socket, mirroring podman-detection's SKIP behaviour.
+result=$(
+  bash -c '
+    source tasks/pi/_docker_flags
+    if [[ -z "${_PI_DOCKER_SOCK:-}" ]]; then
+      echo "SKIP"
+      exit 0
+    fi
+    "${DOCKER_CMD}" run "${DOCKER_FLAGS[@]}" pi-less-yolo:latest \
+      bash -c "docker info > /dev/null 2>&1 && echo OK"
+  '
+)
+
+case "${result}" in
+  OK)   echo "  OK docker CLI reaches the host daemon through the mounted socket" ;;
+  SKIP) echo "  SKIP no host runtime socket found — daemon reachability not tested" ;;
+  *)    echo "FAIL: docker in the container could not reach the host daemon (got '${result}')"; exit 1 ;;
+esac

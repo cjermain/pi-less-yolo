@@ -57,6 +57,27 @@ else
   fail "${DOCKER_CMD} daemon not running — start Docker Desktop, dockerd, or the Podman socket"
 fi
 
+# --- runtime socket (for the docker CLI inside pi) --------------------------
+if [[ -n "${PI_NO_DOCKER:-}" ]]; then
+  info "Docker inside pi disabled (PI_NO_DOCKER is set)"
+else
+  _sock="${DOCKER_HOST:-}"
+  _sock="${_sock#unix://}"
+  if [[ -z "${_sock}" ]]; then
+    if [[ "${DOCKER_CMD}" == "podman" ]]; then
+      _sock="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock"
+      [[ -S "${_sock}" ]] || _sock="/run/podman/podman.sock"
+    else
+      _sock="/var/run/docker.sock"
+    fi
+  fi
+  if [[ -S "${_sock}" ]]; then
+    pass "runtime socket ${_sock} present (docker CLI inside pi can reach the daemon)"
+  else
+    warn "runtime socket ${_sock} not found — docker CLI inside pi will not reach the daemon"
+  fi
+fi
+
 # --- image ------------------------------------------------------------------
 if "${DOCKER_CMD}" image inspect "pi-less-yolo:latest" > /dev/null 2>&1; then
   pass "image pi-less-yolo:latest exists"

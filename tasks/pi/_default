@@ -17,10 +17,17 @@ fi
 
 PI_ARGS=()
 if [[ -z "${PI_NO_CONTAINER_PROMPT:-}" ]]; then
-  PI_ARGS+=(
-    "--append-system-prompt"
-    "You are running inside a Docker container as a non-root user. No Docker socket, sudo, or system package installation (apk requires root) is available."
-  )
+  if [[ -n "${_PI_DOCKER_SOCK:-}" ]]; then
+    PI_ARGS+=(
+      "--append-system-prompt"
+      "You are running inside a Docker container as a non-root user. The Docker CLI is installed and reaches the host Docker daemon via a mounted socket, so you can build and run containers. sudo and system package installation (apk requires root) are unavailable."
+    )
+  else
+    PI_ARGS+=(
+      "--append-system-prompt"
+      "You are running inside a Docker container as a non-root user. No Docker socket, sudo, or system package installation (apk requires root) is available."
+    )
+  fi
 fi
 
 "${DOCKER_CMD}" run "${DOCKER_FLAGS[@]}" "${PI_IMAGE}" "${PI_ARGS[@]}" "$@"

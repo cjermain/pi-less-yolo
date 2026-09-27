@@ -3,6 +3,7 @@
 set -euo pipefail
 
 mise run test:pi
+mise run test:docker
 mise run test:python
 mise run test:editor
 mise run test:limits

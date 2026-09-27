@@ -3,10 +3,13 @@
 FROM cgr.dev/chainguard/node:latest-dev@sha256:f09827f0f82991e657bbc4017674a104604a5bb42690e1977315c57713b84ef2
 
 # openssh-client: ssh binary for git-over-SSH (PI_SSH_AGENT=1) and ssh-add.
+# docker-cli: docker client so pi can drive the host daemon via the mounted
+#   runtime socket (see tasks/pi/_docker_flags). Disable with PI_NO_DOCKER=1.
 USER root
 RUN apk add --no-cache \
         curl \
         ca-certificates \
+        docker-cli \
         git \
         openssh-client \
         tmux \
